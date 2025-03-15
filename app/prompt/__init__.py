@@ -1,0 +1,21 @@
+"""
+Prompt templates for the agent framework.
+"""
+
+from app.prompt.generic_agent import (
+    SYSTEM_PROMPT,
+    NEXT_STEP_PROMPT,
+    PLANNING_TEMPLATE,
+    EXECUTION_STATUS_TEMPLATE,
+    FEEDBACK_REQUEST_TEMPLATE,
+    TOOL_ERROR_TEMPLATE
+)
+
+__all__ = [
+    "SYSTEM_PROMPT",
+    "NEXT_STEP_PROMPT",
+    "PLANNING_TEMPLATE",
+    "EXECUTION_STATUS_TEMPLATE",
+    "FEEDBACK_REQUEST_TEMPLATE",
+    "TOOL_ERROR_TEMPLATE"
+]
