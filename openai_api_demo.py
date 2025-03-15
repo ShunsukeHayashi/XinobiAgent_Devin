@@ -58,50 +58,45 @@ async def run_openai_api_demo():
     print("◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢")
     print("Converting to OpenAI API Format")
     
-    # Prepare the reasoning section
-    reasoning = {
-        "working_backwards_analysis": [],
-        "forward_execution_plan": []
-    }
+    # Create a simple example of using the OpenAI API directly
+    client = OpenAI()
     
-    # Add backwards steps if available
-    if hasattr(agent, 'backwards_steps') and agent.backwards_steps:
-        for i, step in enumerate(agent.backwards_steps):
-            reasoning["working_backwards_analysis"].append({
-                "step_number": len(agent.backwards_steps) - i,
-                "description": step.get('description', 'Unknown step'),
-                "prerequisites": step.get('prerequisites', []),
-                "tools_needed": step.get('tools_needed', [])
-            })
-    
-    # Add forward plan if available
-    if hasattr(agent, 'forward_plan') and agent.forward_plan:
-        for i, step in enumerate(agent.forward_plan):
-            reasoning["forward_execution_plan"].append({
-                "step_number": i + 1,
-                "description": step.get('description', 'Unknown step'),
-                "tools_needed": step.get('tools_needed', []),
-                "completed": i < agent.current_step_index
-            })
-    
-    # Create a mock OpenAI API response (without actually calling the API)
-    openai_response = {
-        "model": "gpt-4o",
-        "text": {
+    # Create a simple example of using the OpenAI API directly
+    example_response = client.responses.create(
+        model="gpt-4o",
+        input=[
+            {
+                "role": "system",
+                "content": "You are a helpful assistant."
+            },
+            {
+                "role": "user",
+                "content": f"Task completed: {goal}\n\nResult: {result}\n\nStatus: {status}"
+            }
+        ],
+        text={
             "format": {
                 "type": "text"
-            },
-            "value": f"Task completed: {goal}\n\nResult: {result}\n\nStatus: {status}"
+            }
         },
-        "reasoning": reasoning,
-        "tools": [],
-        "temperature": 1,
-        "max_output_tokens": 2048,
-        "top_p": 1
-    }
+        reasoning={},
+        tools=[],
+        temperature=1,
+        max_output_tokens=2048,
+        top_p=1,
+        store=True
+    )
     
     # Print the formatted response
-    print(json.dumps(openai_response, indent=2))
+    response_text = ""
+    if example_response.output and len(example_response.output) > 0:
+        for output_item in example_response.output:
+            if hasattr(output_item, 'content') and output_item.content:
+                for content_item in output_item.content:
+                    if hasattr(content_item, 'text') and content_item.text:
+                        response_text += content_item.text
+    
+    print(f"OpenAI API Response: {response_text[:200]}...")
     print("◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢\n")
     
     # Check for datetime files
