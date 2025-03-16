@@ -1,31 +1,40 @@
 """
 GenericAgent implementation using the Working Backwards methodology.
-This implementation uses the new OpenAI API format.
+This implementation inherits from BaseAgent and uses prompt templates.
 """
 
 import asyncio
 import json
 import logging
+import os
 from typing import Dict, List, Any, Optional, Union
 
-from openai import OpenAI
-from pydantic import BaseModel, Field
+import openai
+from pydantic import BaseModel, Field, model_validator
 
+from app.agent.base import BaseAgent
 from app.schema.message import Message
 from app.tool.collection import ToolCollection
+from app.prompt.generic_agent import (
+    SYSTEM_PROMPT,
+    NEXT_STEP_PROMPT,
+    PLANNING_TEMPLATE,
+    EXECUTION_STATUS_TEMPLATE,
+    FEEDBACK_REQUEST_TEMPLATE,
+    TOOL_ERROR_TEMPLATE
+)
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
 
-class GenericAgent(BaseModel):
+class GenericAgent(BaseAgent):
     """
     A generic agent that uses the Working Backwards methodology to solve problems.
-    This implementation uses the new OpenAI API format.
+    This implementation inherits from BaseAgent and uses prompt templates.
     """
     
-    name: str = Field(description="Name of the agent")
-    description: str = Field(description="Description of the agent's purpose")
+    # Basic agent properties
     available_tools: Optional[ToolCollection] = Field(
         default=None, 
         description="Collection of tools available to the agent"
@@ -34,16 +43,28 @@ class GenericAgent(BaseModel):
         default=15, 
         description="Maximum number of steps the agent can take"
     )
-    goal: Optional[str] = Field(
-        default=None,
-        description="The goal that the agent is trying to achieve"
+    
+    # Goal and state tracking
+    goal_state: str = Field(
+        default="",
+        description="The goal state that the agent is trying to achieve"
+    )
+    current_state: str = Field(
+        default="Initial state",
+        description="The current state of the execution"
+    )
+    current_progress: str = Field(
+        default="No progress yet. Planning phase.",
+        description="Description of the current progress"
     )
     
-    # Internal state tracking
-    memory: List[Dict[str, str]] = Field(
+    # Memory and conversation tracking
+    messages: List[Message] = Field(
         default_factory=list,
         description="Memory of the agent's conversation"
     )
+    
+    # Planning and execution tracking
     backwards_steps: List[Dict[str, Any]] = Field(
         default_factory=list,
         description="Steps identified during backwards planning"
@@ -65,271 +86,182 @@ class GenericAgent(BaseModel):
         description="Whether the plan is ready for execution"
     )
     
-    # OpenAI client
-    _client: Optional[OpenAI] = None
+    # Additional state variables
+    state_variables: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Additional state variables for flexibility"
+    )
+    
+    # OpenAI API key is set in __init__
     
     class Config:
         arbitrary_types_allowed = True
     
     def __init__(self, **data):
+        """
+        Initialize the GenericAgent with the provided data.
+        
+        Args:
+            **data: Data to initialize the agent with
+        """
         super().__init__(**data)
-        self._client = OpenAI()
+        
+        # Initialize with system prompt
+        self.messages.append(Message(role="system", content=SYSTEM_PROMPT))
+        
+        # Set API key for OpenAI
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            logger.warning("OPENAI_API_KEY not found in environment variables. Some functionality may be limited.")
+        else:
+            openai.api_key = api_key
     
-    async def set_goal(self, goal: str) -> None:
+    @model_validator(mode="after")
+    def validate_agent_state(self) -> "GenericAgent":
+        """
+        Validate the agent's state and ensure all required fields are initialized.
+        
+        Returns:
+            The validated agent
+        """
+        # Ensure tools are properly initialized
+        if self.available_tools is None:
+            self.available_tools = ToolCollection()
+            
+        return self
+    
+    async def set_goal(self, goal: str) -> str:
         """
         Set the goal for the agent to achieve.
         
         Args:
             goal: The goal to achieve
+            
+        Returns:
+            Confirmation message
         """
-        self.goal = goal
-        self.update_memory("system", f"Your goal is to: {goal}")
+        self.goal_state = goal
+        logger.info(f"Goal set: {goal}")
+        
+        # Clear previous plan if it exists
+        self.backwards_steps = []
+        self.forward_plan = []
+        self.plan_ready = False
+        self.current_step_index = 0
+        self.completed_steps = []
+        
+        # Add goal setting message to memory
+        self.update_memory("system", f"Goal set: {goal}")
+        
+        # Generate initial clarification of the goal
+        goal_clarification_msg = Message(
+            role="user",
+            content=f"My goal is: {goal}\n\nPlease clarify this goal in concrete, specific terms "
+            f"and begin the Working Backwards analysis to determine how to achieve it."
+        )
+        self.messages.append(goal_clarification_msg)
+        
+        return f"Goal set to: {goal}. I will now analyze this goal and work backwards to create a plan."
     
-    def update_memory(self, role: str, content: str) -> None:
+    def update_memory(self, role: str, content: str, name: Optional[str] = None) -> None:
         """
         Update the agent's memory with a new message.
         
         Args:
             role: The role of the message sender (system, user, assistant)
             content: The content of the message
+            name: Optional name of the message sender
         """
-        self.memory.append({"role": role, "content": content})
+        self.messages.append(Message(role=role, content=content, name=name))
         
-    def _extract_text_from_response(self, response) -> str:
+    async def think(self) -> bool:
         """
-        Extract text from an OpenAI API response.
+        Process the current state and decide the next action using Working Backwards methodology.
         
-        Args:
-            response: The OpenAI API response
-            
         Returns:
-            The extracted text as a string
+            True if there are actions to take, False otherwise
         """
-        text = ""
-        if response.output and len(response.output) > 0:
-            for output_item in response.output:
-                if hasattr(output_item, 'content') and output_item.content:
-                    for content_item in output_item.content:
-                        if hasattr(content_item, 'text') and content_item.text:
-                            text += content_item.text
-        return text
-    
-    async def run(self, goal: Optional[str] = None) -> str:
-        """
-        Run the agent to achieve the specified goal.
-        
-        Args:
-            goal: The goal to achieve, if not already set
-            
-        Returns:
-            A summary of the execution
-        """
-        if goal:
-            await self.set_goal(goal)
-        
-        if not self.goal:
-            raise ValueError("Goal must be set before running the agent")
-        
-        # First, plan by working backwards from the goal
-        await self._plan_backwards()
-        
-        # Then, execute the plan forwards
-        result = await self._execute_plan()
-        
-        return result
-    
-    async def _plan_backwards(self) -> None:
-        """
-        Plan by working backwards from the goal to the initial state.
-        This uses the Working Backwards methodology.
-        """
-        # Start with the goal
-        self.update_memory("system", "Plan by working backwards from the goal. What is the final step needed to achieve the goal?")
-        
-        # Use the new OpenAI API format for planning
-        response = self._client.responses.create(
-            model="gpt-4o",
-            input=[
-                {
-                    "role": "system",
-                    "content": f"You are a planning agent that uses the Working Backwards methodology. Your goal is: {self.goal}"
-                },
-                {
-                    "role": "user",
-                    "content": "What is the final step needed to achieve the goal?"
-                }
-            ],
-            text={
-                "format": {
-                    "type": "text"
-                }
-            },
-            reasoning={},
-            tools=[],
-            temperature=0.7,
-            max_output_tokens=2048,
-            top_p=1,
-            store=True
+        # Format the next step prompt with current state
+        formatted_prompt = NEXT_STEP_PROMPT.format(
+            goal_state=self.goal_state,
+            current_progress=self.current_progress,
+            current_state=self.current_state
         )
         
-        # Extract the response text using helper method
-        final_step_description = self._extract_text_from_response(response)
+        # Add next step prompt to memory
+        self.update_memory("user", formatted_prompt)
         
-        # Add the final step to the backwards steps
-        final_step = {
-            "description": final_step_description,
-            "prerequisites": [],
-            "tools_needed": []
-        }
-        self.backwards_steps.append(final_step)
-        
-        # Continue working backwards until we reach the initial state
-        current_step = final_step
-        max_backwards_steps = 10  # Limit to prevent infinite loops
-        
-        for i in range(max_backwards_steps):
-            # Ask what needs to be done before the current step
-            step_query = f"What needs to be done before this step: '{current_step['description']}'?"
-            self.update_memory("system", step_query)
-            
-            # Use the new OpenAI API format for step-back questioning
-            response = self._client.responses.create(
+        try:
+            # Use the OpenAI API for thinking
+            response = openai.ChatCompletion.create(
                 model="gpt-4o",
-                input=[
-                    {
-                        "role": "system",
-                        "content": f"You are a planning agent that uses the Working Backwards methodology. Your goal is: {self.goal}"
-                    },
-                    {
-                        "role": "user",
-                        "content": step_query
-                    }
-                ],
-                text={
-                    "format": {
-                        "type": "text"
-                    }
-                },
-                reasoning={},
-                tools=[],
+                messages=[{"role": msg.role, "content": msg.content} for msg in self.messages],
                 temperature=0.7,
-                max_output_tokens=2048,
-                top_p=1,
-                store=True
+                max_tokens=2048,
+                top_p=1
             )
-            
-            # Extract the response text using helper method
-            previous_step_description = self._extract_text_from_response(response)
-            
-            # Check if we've reached the initial state
-            if "initial state" in previous_step_description.lower() or "already at initial state" in previous_step_description.lower():
-                break
-            
-            # Add the previous step to the backwards steps
-            previous_step = {
-                "description": previous_step_description,
-                "prerequisites": [],
-                "tools_needed": []
-            }
-            self.backwards_steps.append(previous_step)
-            
-            # Update the current step
-            current_step = previous_step
+        except Exception as e:
+            logger.error(f"Error during thinking phase: {str(e)}")
+            self.update_memory("system", f"Error during thinking: {str(e)}")
+            return False
         
-        # Create the forward plan by reversing the backwards steps
-        self.forward_plan = list(reversed(self.backwards_steps))
-        self.plan_ready = True
+        # Extract the response
+        thinking_result = response['choices'][0]['message']['content']
+        
+        # Add the thinking result to memory
+        self.update_memory("assistant", thinking_result)
+        
+        # Check if we need to use a tool
+        tool_to_use = self._extract_tool_from_response(thinking_result)
+        
+        if tool_to_use:
+            # We have a tool to use, so we'll continue
+            return True
+        
+        # If we're done planning but haven't started executing, organize the plan
+        if not self.plan_ready and self.backwards_steps:
+            await self._organize_plan()
+            return True
+        
+        # Check if we're done
+        if self.plan_ready and self.current_step_index >= len(self.forward_plan):
+            return False
+        
+        # Continue with the next step
+        return True
     
-    async def _execute_plan(self) -> str:
+    def _extract_tool_from_response(self, response: str) -> Optional[Dict[str, Any]]:
         """
-        Execute the plan by following the steps in order.
-        
-        Returns:
-            A summary of the execution
-        """
-        if not self.plan_ready:
-            raise ValueError("Plan must be ready before execution")
-        
-        # Execute each step in the forward plan
-        for i, step in enumerate(self.forward_plan):
-            self.current_step_index = i
-            
-            # Execute the current step
-            step_result = await self._execute_step(step)
-            
-            # Add the result to the step
-            step["result"] = step_result
-            
-            # Add the completed step to the list
-            self.completed_steps.append(step)
-        
-        # Generate a summary of the execution
-        summary = await self._generate_summary()
-        
-        return summary
-    
-    async def _execute_step(self, step: Dict[str, Any]) -> str:
-        """
-        Execute a single step in the plan.
+        Extract tool usage information from a response.
         
         Args:
-            step: The step to execute
+            response: The response to extract tool information from
             
         Returns:
-            The result of executing the step
+            Tool information if a tool should be used, None otherwise
         """
-        # Determine which tools to use for this step
-        tools_to_use = []
-        if self.available_tools:
-            tools_to_use = [tool.name for tool in self.available_tools.tools]
-        
-        # Use the new OpenAI API format for step execution
-        response = self._client.responses.create(
-            model="gpt-4o",
-            input=[
-                {
-                    "role": "system",
-                    "content": f"You are an execution agent that executes steps to achieve a goal. Your goal is: {self.goal}"
-                },
-                {
-                    "role": "user",
-                    "content": f"Execute this step: {step['description']}. Available tools: {', '.join(tools_to_use)}"
-                }
-            ],
-            text={
-                "format": {
-                    "type": "text"
-                }
-            },
-            reasoning={},
-            tools=[],
-            temperature=0.7,
-            max_output_tokens=2048,
-            top_p=1,
-            store=True
-        )
-        
-        # Extract the response text using helper method
-        execution_plan = self._extract_text_from_response(response)
-        
-        # Determine if we need to use a tool
-        tool_to_use = None
-        tool_args = {}
-        
-        # Parse the execution plan to identify tool usage
-        if "use tool:" in execution_plan.lower():
+        # Check if the response mentions using a tool
+        if "use tool:" in response.lower() or "tool to use:" in response.lower():
             # Extract tool name and arguments
-            tool_lines = [line for line in execution_plan.split('\n') if "use tool:" in line.lower()]
+            tool_lines = [line for line in response.split('\n') 
+                         if "use tool:" in line.lower() or "tool to use:" in line.lower()]
+            
             if tool_lines:
                 tool_line = tool_lines[0]
-                tool_parts = tool_line.split("use tool:", 1)[1].strip().split(" ", 1)
+                
+                # Extract the tool name and arguments
+                if "use tool:" in tool_line.lower():
+                    tool_parts = tool_line.split("use tool:", 1)[1].strip().split(" ", 1)
+                else:
+                    tool_parts = tool_line.split("tool to use:", 1)[1].strip().split(" ", 1)
+                    
                 tool_name = tool_parts[0].strip()
                 
                 # Find the tool in the available tools
                 if self.available_tools:
                     for tool in self.available_tools.tools:
                         if tool.name.lower() == tool_name.lower():
-                            tool_to_use = tool
+                            tool_args = {}
                             
                             # Extract arguments if provided
                             if len(tool_parts) > 1:
@@ -339,26 +271,218 @@ class GenericAgent(BaseModel):
                                 except json.JSONDecodeError:
                                     # If not JSON, use as a single argument
                                     tool_args = {"input": tool_parts[1].strip()}
-                            break
+                            
+                            return {
+                                "tool": tool,
+                                "args": tool_args
+                            }
         
-        # Execute the tool if needed
-        if tool_to_use:
+        return None
+    
+    async def run(self, request: Optional[str] = None) -> str:
+        """
+        Run the agent's main workflow.
+        
+        Args:
+            request: Initial request or goal for the agent
+            
+        Returns:
+            The final result of the agent's execution
+        """
+        if request:
+            await self.set_goal(request)
+        
+        if not self.goal_state:
+            raise ValueError("Goal must be set before running the agent")
+        
+        # Main execution loop
+        steps_taken = 0
+        
+        while steps_taken < self.max_steps:
+            # Think about what to do next
+            should_continue = await self.think()
+            
+            if not should_continue:
+                break
+            
+            # Act on the decision
+            await self.act()
+            
+            steps_taken += 1
+        
+        # Generate a summary of the execution
+        summary = await self._generate_summary()
+        
+        return summary
+    
+    async def act(self) -> str:
+        """
+        Execute the decided action.
+        
+        Returns:
+            The result of the action
+        """
+        # Check if we have a tool to use from the last thinking step
+        last_message = self.messages[-1] if self.messages else None
+        
+        if last_message and last_message.role == "assistant":
+            tool_info = self._extract_tool_from_response(last_message.content)
+            
+            if tool_info:
+                tool = tool_info["tool"]
+                args = tool_info["args"]
+                
+                try:
+                    # Execute the tool
+                    logger.info(f"Executing tool: {tool.name} with args: {args}")
+                    result = await tool.run(**args)
+                    
+                    # Update memory with the result
+                    self.update_memory("system", f"Tool result: {result}")
+                    
+                    # Update current progress
+                    self.current_progress = f"Executed tool: {tool.name}"
+                    
+                    # If we're executing a plan, update the step
+                    if self.plan_ready and self.current_step_index < len(self.forward_plan):
+                        step = self.forward_plan[self.current_step_index]
+                        step["tool_used"] = tool.name
+                        step["tool_args"] = args
+                        step["result"] = result
+                        
+                        # Add to completed steps
+                        self.completed_steps.append(step)
+                        
+                        # Move to next step
+                        self.current_step_index += 1
+                        
+                        # Update progress
+                        self.current_progress = f"Completed step {self.current_step_index}/{len(self.forward_plan)}"
+                    
+                    return result
+                except Exception as e:
+                    # Handle tool execution error
+                    error_message = f"Error executing tool '{tool.name}': {str(e)}"
+                    logger.error(error_message)
+                    
+                    # Format error message using template
+                    formatted_error = TOOL_ERROR_TEMPLATE.format(
+                        tool_name=tool.name,
+                        operation=str(args),
+                        error=str(e),
+                        impact="Plan execution may be delayed or require adjustment.",
+                        recovery_steps="Consider alternative approaches or tools.",
+                        user_question="Would you like me to try an alternative approach?"
+                    )
+                    
+                    # Update memory with the error
+                    self.update_memory("system", formatted_error)
+                    
+                    return error_message
+        
+        # If we're executing a plan but don't have a specific tool to use
+        if self.plan_ready and self.current_step_index < len(self.forward_plan):
+            # Get the current step
+            step = self.forward_plan[self.current_step_index]
+            
+            # Execute the step using the OpenAI API
             try:
-                # Execute the tool with the provided arguments
-                tool_result = await tool_to_use.run(**tool_args)
-                
-                # Update the step with the tool used and result
-                step["tool_used"] = tool_to_use.name
-                step["tool_args"] = tool_args
-                
-                return f"Used tool '{tool_to_use.name}' with result: {tool_result}"
+                response = openai.ChatCompletion.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": f"Execute this step: {step['description']}. "
+                                                   f"Available tools: {', '.join([tool.name for tool in self.available_tools.tools]) if self.available_tools else 'None'}"}
+                    ],
+                    temperature=0.7,
+                    max_tokens=2048,
+                    top_p=1
+                )
             except Exception as e:
-                error_message = f"Error executing tool '{tool_to_use.name}': {str(e)}"
-                logger.error(error_message)
-                return error_message
+                logger.error(f"Error executing step: {str(e)}")
+                self.update_memory("system", f"Error executing step: {str(e)}")
+                return f"Error executing step: {str(e)}"
+            
+            # Extract the response
+            execution_result = response['choices'][0]['message']['content']
+            
+            # Update memory with the result
+            self.update_memory("assistant", execution_result)
+            
+            # Update the step with the result
+            step["result"] = execution_result
+            
+            # Add to completed steps
+            self.completed_steps.append(step)
+            
+            # Move to next step
+            self.current_step_index += 1
+            
+            # Update progress
+            self.current_progress = f"Completed step {self.current_step_index}/{len(self.forward_plan)}"
+            
+            return execution_result
         
-        # If no tool was used, return the execution plan
-        return execution_plan
+        # If we don't have a specific action to take
+        return "No action taken."
+    
+    async def _organize_plan(self) -> None:
+        """
+        Organize the backwards steps into a forward execution plan.
+        """
+        if not self.backwards_steps:
+            return
+        
+        # Prepare to create the forward plan
+        planning_prompt = PLANNING_TEMPLATE.format(
+            goal=self.goal_state,
+            current_state=self.current_state,
+            backwards_analysis="\n".join([f"{i+1}. {step.get('description', 'Step')}" 
+                                         for i, step in enumerate(self.backwards_steps)]),
+            forward_plan="To be determined",
+            tools_required=", ".join([tool.name for tool in self.available_tools.tools]) 
+                          if self.available_tools else "None",
+            success_criteria="To be determined",
+            potential_challenges="To be determined",
+            monitoring_approach="To be determined"
+        )
+        
+        # Add planning prompt to memory
+        self.update_memory("user", planning_prompt)
+        
+        # Use the OpenAI API for planning
+        try:
+            response = openai.ChatCompletion.create(
+                model="gpt-4o",
+                messages=[{"role": msg.role, "content": msg.content} for msg in self.messages],
+                temperature=0.7,
+                max_tokens=2048,
+                top_p=1
+            )
+        except Exception as e:
+            logger.error(f"Error during planning: {str(e)}")
+            self.update_memory("system", f"Error during planning: {str(e)}")
+            return
+        
+        # Extract the response
+        planning_result = response['choices'][0]['message']['content']
+        
+        # Add the planning result to memory
+        self.update_memory("assistant", planning_result)
+        
+        # Create the forward plan by reversing the backwards steps
+        self.forward_plan = list(reversed(self.backwards_steps))
+        
+        # Mark the plan as ready
+        self.plan_ready = True
+        
+        # Log the plan creation
+        plan_summary = "\n".join([f"{i+1}. {step.get('description', 'Step')}" 
+                                 for i, step in enumerate(self.forward_plan)])
+        logger.info(f"Forward execution plan created with {len(self.forward_plan)} steps:\n{plan_summary}")
+        
+        # Update the current progress
+        self.current_progress = f"Plan created with {len(self.forward_plan)} steps."
     
     async def _generate_summary(self) -> str:
         """
@@ -367,34 +491,24 @@ class GenericAgent(BaseModel):
         Returns:
             A summary of the execution
         """
-        # Use the new OpenAI API format for summary generation
-        response = self._client.responses.create(
-            model="gpt-4o",
-            input=[
-                {
-                    "role": "system",
-                    "content": f"You are a summary agent that summarizes the execution of a plan. The goal was: {self.goal}"
-                },
-                {
-                    "role": "user",
-                    "content": f"Summarize the execution of the plan. {len(self.completed_steps)} steps were completed out of {len(self.forward_plan)} total steps."
-                }
-            ],
-            text={
-                "format": {
-                    "type": "text"
-                }
-            },
-            reasoning={},
-            tools=[],
-            temperature=0.7,
-            max_output_tokens=2048,
-            top_p=1,
-            store=True
-        )
+        # Use the OpenAI API for summary generation
+        try:
+            response = openai.ChatCompletion.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": f"You are a summary agent that summarizes the execution of a plan. The goal was: {self.goal_state}"},
+                    {"role": "user", "content": f"Summarize the execution of the plan. {len(self.completed_steps)} steps were completed out of {len(self.forward_plan)} total steps."}
+                ],
+                temperature=0.7,
+                max_tokens=2048,
+                top_p=1
+            )
+        except Exception as e:
+            logger.error(f"Error generating summary: {str(e)}")
+            return f"Error generating summary: {str(e)}"
         
-        # Extract the response text using helper method
-        summary = self._extract_text_from_response(response)
+        # Extract the response
+        summary = response['choices'][0]['message']['content']
         
         return summary
     
@@ -405,22 +519,24 @@ class GenericAgent(BaseModel):
         Returns:
             A formatted string showing the current execution status
         """
-        status = f"Goal: {self.goal}\n\n"
+        # Format the status using the execution status template
+        status_content = EXECUTION_STATUS_TEMPLATE.format(
+            goal=self.goal_state,
+            plan_steps="\n".join([f"{i+1}. {step.get('description', 'Step')}" 
+                                for i, step in enumerate(self.forward_plan)]) if self.forward_plan else "No plan yet",
+            current_step=f"Step {self.current_step_index+1}/{len(self.forward_plan)}: "
+                        f"{self.forward_plan[self.current_step_index].get('description', 'Step')}" 
+                        if self.plan_ready and self.current_step_index < len(self.forward_plan) else "Planning phase",
+            completed_steps="\n".join([f"✅ {i+1}. {step.get('description', 'Step')}: "
+                                     f"{step.get('result', 'No result')[:100]}..." 
+                                     if len(str(step.get('result', ''))) > 100 
+                                     else f"✅ {i+1}. {step.get('description', 'Step')}: {step.get('result', 'No result')}"
+                                     for i, step in enumerate(self.completed_steps)]) if self.completed_steps else "None",
+            pending_steps="\n".join([f"⏳ {i+1}. {step.get('description', 'Step')}" 
+                                   for i, step in enumerate(self.forward_plan[self.current_step_index:])]) 
+                         if self.plan_ready and self.current_step_index < len(self.forward_plan) else "All steps completed",
+            observations=self.current_progress,
+            adjustments="None" if not self.state_variables.get("adjustments") else self.state_variables.get("adjustments")
+        )
         
-        if not self.plan_ready:
-            status += "Planning in progress...\n"
-        else:
-            status += f"Plan: {len(self.forward_plan)} steps\n"
-            status += f"Completed: {len(self.completed_steps)} steps\n\n"
-            
-            for i, step in enumerate(self.forward_plan):
-                if i < self.current_step_index:
-                    status += f"✅ Step {i+1}: {step['description']}\n"
-                    if "result" in step:
-                        status += f"   Result: {step['result'][:100]}...\n" if len(step['result']) > 100 else f"   Result: {step['result']}\n"
-                elif i == self.current_step_index:
-                    status += f"🔄 Step {i+1}: {step['description']} (in progress)\n"
-                else:
-                    status += f"⏳ Step {i+1}: {step['description']}\n"
-        
-        return status
+        return status_content
