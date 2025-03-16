@@ -1,0 +1,52 @@
+{
+  "type": "function",
+  "function": {
+    "name": "devin",
+    "description": "Interact with Devin AI to solve programming tasks",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "command": {
+          "type": "string",
+          "enum": ["create_session", "send_message", "get_session_status", "list_sessions", "upload_file"],
+          "description": "The command to execute"
+        },
+        "arguments": {
+          "type": "object",
+          "description": "Arguments for the command",
+          "properties": {
+            "prompt": {
+              "type": "string",
+              "description": "The task description for Devin (for create_session)"
+            },
+            "playbook_id": {
+              "type": "string",
+              "description": "Optional playbook ID to guide execution (for create_session)"
+            },
+            "message": {
+              "type": "string",
+              "description": "Message to send to Devin (for send_message)"
+            },
+            "session_id": {
+              "type": "string",
+              "description": "Session ID to interact with (for send_message, get_session_status)"
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Maximum number of sessions to return (for list_sessions)"
+            },
+            "offset": {
+              "type": "integer",
+              "description": "Number of sessions to skip (for list_sessions)"
+            },
+            "file_path": {
+              "type": "string",
+              "description": "Path to the file to upload (for upload_file)"
+            }
+          }
+        }
+      },
+      "required": ["command", "arguments"]
+    }
+  }
+}
