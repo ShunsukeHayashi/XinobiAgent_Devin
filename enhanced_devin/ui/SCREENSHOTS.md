@@ -1,58 +1,114 @@
 # Enhanced Devin UI Screenshots
 
-This document provides screenshots of the Enhanced Devin UI to help users understand the interface.
+This document provides screenshots of the Enhanced Devin UI to help users understand the interface and its features.
 
 ## Main Interface
 
-The main interface of the Enhanced Devin UI consists of the following sections:
+![Main Interface](https://placeholder-for-screenshot-url.com/main_interface.png)
 
-1. **Header**: Displays the title and description of the UI
-2. **Session Management**: Allows users to create and manage sessions
-3. **Chat Interface**: Allows users to send messages and view responses
-4. **Tool Execution**: Allows users to execute tools with custom parameters
+The main interface of the Enhanced Devin UI consists of several sections:
+
+1. Header with the title "Enhanced Devin"
+2. API Key input field
+3. Session management section
+4. Chat interface
+5. Agent actions panel
+
+## API Key Input
+
+![API Key Input](https://placeholder-for-screenshot-url.com/api_key_input.png)
+
+The API Key input field allows you to enter your Devin API key. For demo purposes, you can leave this field empty to use the mock API client.
 
 ## Session Management
 
-![Session Management](https://i.imgur.com/placeholder.png)
+![Session Management](https://placeholder-for-screenshot-url.com/session_management.png)
 
-The session management section allows users to:
-- Create a new session by entering a name and clicking "Create Session"
-- View the current session information
+The Session Management section allows you to:
+
+1. Create new sessions by entering a name and clicking "Create Session"
+2. Load existing sessions from the "Active Sessions" dropdown
+3. Refresh the list of sessions by clicking "Refresh"
 
 ## Chat Interface
 
-![Chat Interface](https://i.imgur.com/placeholder.png)
+![Chat Interface](https://placeholder-for-screenshot-url.com/chat_interface.png)
 
-The chat interface allows users to:
-- Send messages to the current session
-- View the chat history with user messages and assistant responses
+The Chat Interface allows you to:
 
-## Tool Execution
+1. View the chat history between you and the agent
+2. Send messages to the agent
+3. Upload files to share with the agent
 
-![Tool Execution](https://i.imgur.com/placeholder.png)
+## Agent Actions
 
-The tool execution section allows users to:
-- Select a tool from the dropdown menu
-- Enter parameters in JSON format
-- Execute the tool and view the result
+![Agent Actions](https://placeholder-for-screenshot-url.com/agent_actions.png)
 
-## Example Usage
+The Agent Actions panel shows the actions taken by the agent in response to your messages. Each action includes:
 
-### Creating a Session
+- Time: When the action was taken
+- Action: What the agent did
+- Status: Whether the action was completed successfully
+
+## Creating a Session
+
+![Creating a Session](https://placeholder-for-screenshot-url.com/creating_session.png)
+
+To create a session:
 
 1. Enter a name for the session in the "Session Name" field
 2. Click "Create Session"
-3. The session information will be displayed below
+3. The session will appear in the "Active Sessions" dropdown
 
-### Sending a Message
+## Sending a Message
+
+![Sending a Message](https://placeholder-for-screenshot-url.com/sending_message.png)
+
+To send a message:
 
 1. Type your message in the "Message" field
 2. Click "Send Message"
-3. The message and response will appear in the chat history
+3. Your message will appear in the chat history
+4. The agent will respond with a message
+5. The agent actions panel will show the actions taken by the agent
 
-### Executing a Tool
+## Uploading a File
 
-1. Select a tool from the dropdown menu
-2. Enter parameters in JSON format
-3. Click "Execute Tool"
-4. The tool execution result will be displayed below
+![Uploading a File](https://placeholder-for-screenshot-url.com/uploading_file.png)
+
+To upload a file:
+
+1. Click "Upload File"
+2. Select a file from your computer
+3. Type a message related to the file
+4. Click "Send Message"
+5. The agent will acknowledge the file upload
+
+## Public URL Sharing
+
+![Public URL Sharing](https://placeholder-for-screenshot-url.com/public_url_sharing.png)
+
+To share the UI with others:
+
+1. Run the UI with the `--share` option:
+   ```bash
+   python run_simple_gradio_ui.py --share
+   ```
+2. A public URL will be generated and displayed in the console
+3. Share this URL with others to allow them to access the UI
+
+## Debug Mode
+
+![Debug Mode](https://placeholder-for-screenshot-url.com/debug_mode.png)
+
+To run the UI in debug mode:
+
+1. Run the UI with the `--debug` option:
+   ```bash
+   python run_simple_gradio_ui.py --debug
+   ```
+2. More detailed logs will be displayed in the console
+
+## Conclusion
+
+These screenshots provide a visual guide to the Enhanced Devin UI. For more detailed information on how to use the UI, see README_USAGE.md.

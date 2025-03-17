@@ -4,120 +4,196 @@ This guide provides solutions to common issues that may arise when using the Enh
 
 ## Installation Issues
 
-### Missing Dependencies
+### Issue: Missing Dependencies
 
-**Issue**: Error messages about missing dependencies when running the UI.
+**Symptoms:**
+- Error messages about missing modules when starting the UI
+- ImportError or ModuleNotFoundError exceptions
 
-**Solution**: Install the required dependencies using pip:
+**Solution:**
+Install the required dependencies manually:
+
 ```bash
-pip install gradio aiohttp matplotlib numpy psutil
+pip install gradio==5.21.0
+pip install aiohttp
+pip install matplotlib
+pip install numpy
+pip install psutil
 ```
 
-### Port Already in Use
+### Issue: Version Conflicts
 
-**Issue**: Error message about the port already being in use when starting the UI.
+**Symptoms:**
+- Error messages about incompatible versions
+- AttributeError or TypeError exceptions
 
-**Solution**: Use a different port:
+**Solution:**
+Create a fresh virtual environment and install the exact versions of the dependencies:
+
 ```bash
+python -m venv fresh_venv
+source fresh_venv/bin/activate  # On Windows: fresh_venv\Scripts\activate
+pip install gradio==5.21.0 aiohttp matplotlib numpy psutil
+```
+
+## Startup Issues
+
+### Issue: Port Already in Use
+
+**Symptoms:**
+- Error message: "Address already in use"
+- UI fails to start
+
+**Solution:**
+Use a different port:
+
+```bash
+python run_simple_gradio_ui.py --port 8080
+```
+
+### Issue: Permission Denied
+
+**Symptoms:**
+- Error message: "Permission denied"
+- UI fails to start
+
+**Solution:**
+Run the command with elevated privileges or choose a port number above 1024:
+
+```bash
+# On Linux/Mac
+sudo python run_simple_gradio_ui.py
+
+# Or use a higher port
 python run_simple_gradio_ui.py --port 8080
 ```
 
 ## UI Issues
 
-### UI Not Loading
+### Issue: UI Not Loading
 
-**Issue**: The UI does not load or displays an error message.
+**Symptoms:**
+- Browser shows a blank page or loading spinner
+- No error messages in the console
 
-**Solution**:
-1. Check that all dependencies are installed
-2. Try running with debug mode to see more detailed error messages:
-```bash
-python run_simple_gradio_ui.py --debug
-```
+**Solution:**
+1. Check if the UI is running by visiting `http://localhost:7860` (or the port you specified)
+2. Try a different browser
+3. Clear your browser cache and cookies
+4. Restart the UI with the `--debug` flag to see more detailed logs:
+   ```bash
+   python run_simple_gradio_ui.py --debug
+   ```
 
-### Session Creation Issues
+### Issue: Session Creation Fails
 
-**Issue**: Unable to create a session or error message when creating a session.
+**Symptoms:**
+- Error message when creating a session
+- Session doesn't appear in the dropdown
 
-**Solution**:
-1. Make sure you've entered a valid session name
-2. Check the console for error messages
-3. Try restarting the UI
+**Solution:**
+1. Check if the API key is set correctly (if using a real API)
+2. Restart the UI
+3. Check the logs for error messages
 
-### Message Sending Issues
+### Issue: Messages Not Sending
 
-**Issue**: Unable to send messages or error message when sending messages.
+**Symptoms:**
+- Messages don't appear in the chat history
+- No response from the agent
 
-**Solution**:
-1. Make sure you've created a session first
-2. Check that your message is not empty
-3. Check the console for error messages
-
-### Tool Execution Issues
-
-**Issue**: Unable to execute tools or error message when executing tools.
-
-**Solution**:
-1. Make sure you've created a session first
-2. Check that your parameters are valid JSON
-3. Verify that the tool name is correct
-4. Check the console for error messages
+**Solution:**
+1. Check if a session is active
+2. Try creating a new session
+3. Check the logs for error messages
+4. Restart the UI
 
 ## API Issues
 
-### API Key Issues
+### Issue: API Key Not Working
 
-**Issue**: Error message about missing or invalid API key.
+**Symptoms:**
+- Error messages about authentication
+- API requests failing
 
-**Solution**:
-1. The UI is running in mock mode, which does not require an API key
-2. If you want to use the real API, set the API key using the environment variable:
-```bash
-export DEVIN_API_KEY=your_api_key
-```
-3. Or pass the API key as a command-line argument:
-```bash
-python run_simple_gradio_ui.py --api-key your_api_key
-```
+**Solution:**
+1. Check if the API key is entered correctly
+2. Try setting the API key as an environment variable:
+   ```bash
+   export DEVIN_API_KEY=your_api_key_here
+   ```
+3. For testing purposes, you can use the UI without an API key (it will use a mock API client)
 
-### API Connection Issues
+### Issue: API Requests Timing Out
 
-**Issue**: Error message about unable to connect to the API.
+**Symptoms:**
+- Error messages about timeouts
+- Long delays when sending messages
 
-**Solution**:
+**Solution:**
 1. Check your internet connection
-2. Verify that the API is available
-3. Check that your API key is valid
-4. Try running in mock mode for testing:
+2. Try again later
+3. For testing purposes, you can use the UI without an API key (it will use a mock API client)
+
+## File Upload Issues
+
+### Issue: File Upload Fails
+
+**Symptoms:**
+- Error message when uploading a file
+- File doesn't appear in the UI
+
+**Solution:**
+1. Check if the file size is within limits (usually 200MB)
+2. Try a smaller file
+3. Check the file format (text files work best for testing)
+
+## Public URL Issues
+
+### Issue: Public URL Not Working
+
+**Symptoms:**
+- Public URL not generated
+- Error when accessing the public URL
+
+**Solution:**
+1. Make sure you're using the `--share` flag:
+   ```bash
+   python run_simple_gradio_ui.py --share
+   ```
+2. Check your internet connection
+3. Try again later
+4. If using a corporate network, check if outbound connections are allowed
+
+## Advanced Troubleshooting
+
+### Checking Logs
+
+For more detailed troubleshooting, check the logs:
+
 ```bash
-python run_simple_gradio_ui.py
+python run_simple_gradio_ui.py --debug > ui_log.txt 2>&1
 ```
 
-## Other Issues
+This will save the logs to a file called `ui_log.txt`.
 
-### UI Crashes
+### Debugging Network Issues
 
-**Issue**: The UI crashes or stops responding.
+If you suspect network issues, you can use tools like `curl` to test API connectivity:
 
-**Solution**:
-1. Check the console for error messages
-2. Try running with debug mode to see more detailed error messages:
 ```bash
-python run_simple_gradio_ui.py --debug
+curl -v https://api.example.com/endpoint
 ```
-3. Restart the UI
 
-### Public URL Issues
+### Reporting Issues
 
-**Issue**: Unable to access the UI via the public URL.
+If you encounter an issue that isn't covered in this guide, please report it with the following information:
 
-**Solution**:
-1. Make sure you've used the `--share` option when starting the UI:
-```bash
-python run_simple_gradio_ui.py --share
-```
-2. Check that the public URL is valid
-3. Try accessing the UI via localhost:
-```
-http://localhost:7860
-```
+1. Steps to reproduce the issue
+2. Error messages (if any)
+3. Operating system and Python version
+4. Logs from running the UI with the `--debug` flag
+
+## Conclusion
+
+Most issues with the Enhanced Devin UI can be resolved by checking dependencies, restarting the UI, or using the `--debug` flag to get more information. If you continue to experience issues, please report them as described above.

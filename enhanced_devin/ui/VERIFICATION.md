@@ -1,69 +1,97 @@
-# Enhanced Devin UI Verification Report
+# Enhanced Devin UI Verification Guide
 
-## Overview
+This guide explains how to verify that the Enhanced Devin UI is working correctly.
 
-This report verifies the functionality of the Enhanced Devin UI implementation. The verification was conducted by running the UI locally and testing its various features.
+## Prerequisites
 
-## Verification Process
+Before verifying the Enhanced Devin UI, make sure you have:
 
-The verification process involved the following steps:
+- Installed all required dependencies (see INSTALLATION.md)
+- Set up the environment (see INSTALLATION.md)
 
-1. **Installation**: Installed the required dependencies
-2. **UI Launch**: Launched the UI locally with a public URL
-3. **Feature Testing**: Tested the various features of the UI
-4. **Documentation Review**: Reviewed the documentation for completeness and accuracy
+## Verification Steps
 
-## Verification Results
+### 1. Start the UI
 
-### Installation
-
-The installation process was successful. The following dependencies were installed:
-- gradio
-- aiohttp
-- matplotlib
-- numpy
-- psutil
-
-### UI Launch
-
-The UI was successfully launched locally using the following command:
 ```bash
-python run_simple_gradio_ui.py --share
+python run_simple_gradio_ui.py --debug
 ```
 
-The UI was accessible via a public URL provided by Gradio.
+The `--debug` flag enables debug mode, which provides more detailed logging information.
 
-### Feature Testing
+### 2. Verify the UI is Running
 
-The following features were tested:
+You should see output similar to:
 
-1. **Session Management**:
-   - Created a new session
-   - Verified that the session information was displayed correctly
+```
+Starting Simple Enhanced Devin UI on port 7860
+Running on local URL:  http://0.0.0.0:7860
+```
 
-2. **Chat Interface**:
-   - Sent messages to the session
-   - Verified that the messages and responses were displayed correctly in the chat history
+### 3. Open the UI in a Browser
 
-3. **Tool Execution**:
-   - Selected a tool from the dropdown
-   - Entered parameters in JSON format
-   - Executed the tool
-   - Verified that the tool execution result was displayed correctly
+Open a web browser and navigate to:
 
-All features functioned as expected.
+```
+http://localhost:7860
+```
 
-### Documentation Review
+You should see the Enhanced Devin UI with the following components:
 
-The documentation was reviewed for completeness and accuracy. The following documents were reviewed:
+- Header with "Enhanced Devin" title
+- API Key input field
+- Session management section
+- Chat interface
+- Agent actions panel
 
-- **README_USAGE.md**: Usage guide for the Gradio UI (English)
-- **README_USAGE_JA.md**: Usage guide for the Gradio UI (Japanese)
-- **INSTALLATION.md**: Installation guide for the Gradio UI (English)
-- **INSTALLATION_JA.md**: Installation guide for the Gradio UI (Japanese)
+### 4. Test Session Creation
 
-The documentation was found to be complete and accurate.
+1. Enter a name for the session (e.g., "Test Session")
+2. Click "Create Session"
+3. Verify that the session appears in the "Active Sessions" dropdown
+
+### 5. Test Message Sending
+
+1. Type a message in the "Message" field (e.g., "Hello, Enhanced Devin!")
+2. Click "Send Message"
+3. Verify that the message appears in the chat history
+4. Verify that the agent responds with a message
+5. Verify that the agent actions panel shows the actions taken by the agent
+
+### 6. Test File Upload
+
+1. Prepare a small text file for testing
+2. Click "Upload File" and select the test file
+3. Type a message related to the file (e.g., "Please analyze this file")
+4. Click "Send Message"
+5. Verify that the agent acknowledges the file upload
+
+### 7. Test Public URL Sharing
+
+1. Restart the UI with the `--share` option:
+   ```bash
+   python run_simple_gradio_ui.py --share
+   ```
+2. Verify that a public URL is generated (it will be displayed in the console)
+3. Open the public URL in a browser and verify that the UI works correctly
+
+## Verification Checklist
+
+Use this checklist to ensure all aspects of the UI are working correctly:
+
+- [ ] UI starts without errors
+- [ ] UI is accessible via localhost
+- [ ] Session creation works
+- [ ] Message sending works
+- [ ] Agent responds to messages
+- [ ] Agent actions are displayed
+- [ ] File upload works
+- [ ] Public URL sharing works
+
+## Troubleshooting
+
+If you encounter issues during verification, see TROUBLESHOOTING.md for solutions to common problems.
 
 ## Conclusion
 
-The Enhanced Devin UI implementation has been verified to be functional and user-friendly. The UI provides a simple and intuitive interface for interacting with Enhanced Devin, making it accessible to users with varying levels of technical expertise.
+If all verification steps pass, the Enhanced Devin UI is working correctly and ready for use.
