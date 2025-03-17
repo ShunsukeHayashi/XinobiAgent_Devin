@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "Devin API Monitor",
+  "version": "1.0",
+  "description": "Monitor and analyze Devin API interactions",
+  "permissions": [
+    "webRequest",
+    "storage",
+    "tabs",
+    "activeTab",
+    "scripting",
+    "declarativeNetRequest"
+  ],
+  "host_permissions": [
+    "https://api.devin.ai/*",
+    "https://app.devin.ai/*"
+  ],
+  "background": {
+    "service_worker": "js/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://api.devin.ai/*", "https://app.devin.ai/*"],
+      "js": ["js/content.js"]
+    }
+  ],
+  "devtools_page": "devtools.html",
+  "web_accessible_resources": [
+    {
+      "resources": ["js/page_script.js"],
+      "matches": ["https://api.devin.ai/*", "https://app.devin.ai/*"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "images/icon16.png",
+      "48": "images/icon48.png",
+      "128": "images/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "images/icon16.png",
+    "48": "images/icon48.png",
+    "128": "images/icon128.png"
+  }
+}

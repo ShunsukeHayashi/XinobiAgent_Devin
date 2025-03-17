@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Devin API Monitor</title>
+  <link rel="stylesheet" href="css/popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Devin API Monitor</h1>
+    </header>
+    
+    <div class="content">
+      <div class="status-section">
+        <h2>Status</h2>
+        <div id="monitoringStatus" class="status">
+          <span class="status-indicator active"></span>
+          <span class="status-text">Monitoring Active</span>
+        </div>
+      </div>
+      
+      <div class="stats-section">
+        <h2>Statistics</h2>
+        <div class="stat-item">
+          <span class="stat-label">Requests Captured:</span>
+          <span id="requestCount" class="stat-value">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Sessions Created:</span>
+          <span id="sessionCount" class="stat-value">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Messages Sent:</span>
+          <span id="messageCount" class="stat-value">0</span>
+        </div>
+      </div>
+      
+      <div class="actions-section">
+        <button id="openDevToolsBtn" class="action-btn">Open DevTools Panel</button>
+        <button id="clearDataBtn" class="action-btn">Clear Data</button>
+        <button id="exportDataBtn" class="action-btn">Export Data</button>
+      </div>
+    </div>
+    
+    <footer>
+      <p>Devin API Monitor v1.0</p>
+    </footer>
+  </div>
+  
+  <script src="js/popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Devin API Monitor Test</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    
+    h1 {
+      color: #2c3e50;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: white;
+      padding: 20px;
+      border-radius: 5px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .test-section {
+      margin-bottom: 20px;
+    }
+    
+    .test-section h2 {
+      color: #3498db;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+    }
+    
+    .test-button {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 3px;
+      cursor: pointer;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    
+    .test-button:hover {
+      background-color: #2980b9;
+    }
+    
+    .results {
+      background-color: #f9f9f9;
+      padding: 15px;
+      border-radius: 3px;
+      border: 1px solid #eee;
+      margin-top: 10px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    
+    .log-entry {
+      margin-bottom: 5px;
+      padding: 5px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .log-entry.info {
+      color: #2c3e50;
+    }
+    
+    .log-entry.error {
+      color: #e74c3c;
+    }
+    
+    .log-entry.warn {
+      color: #f39c12;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Devin API Monitor Test</h1>
+    
+    <div class="test-section">
+      <h2>Mock API Requests</h2>
+      <p>Test the extension by mocking Devin API requests.</p>
+      <button id="mockRequestsBtn" class="test-button">Mock Requests</button>
+      <button id="clearRequestsBtn" class="test-button">Clear Requests</button>
+    </div>
+    
+    <div class="test-section">
+      <h2>Test Console Commands</h2>
+      <p>Test the console commands provided by the extension.</p>
+      <button id="testHelpBtn" class="test-button">Test Help Command</button>
+      <button id="testRequestsBtn" class="test-button">Test Requests Command</button>
+      <button id="testSessionsBtn" class="test-button">Test Sessions Command</button>
+      <button id="testMessagesBtn" class="test-button">Test Messages Command</button>
+    </div>
+    
+    <div class="test-section">
+      <h2>Run All Tests</h2>
+      <p>Run all tests at once.</p>
+      <button id="runAllTestsBtn" class="test-button">Run All Tests</button>
+    </div>
+    
+    <div class="test-section">
+      <h2>Results</h2>
+      <div id="results" class="results"></div>
+    </div>
+  </div>
+  
+  <script src="../js/network_monitor.js"></script>
+  <script src="../js/console_monitor.js"></script>
+  <script src="../js/console_integration.js"></script>
+  <script src="test_extension.js"></script>
+  <script>
+    // Override console methods to display in results
+    const resultsEl = document.getElementById('results');
+    const originalConsole = {
+      log: console.log,
+      info: console.info,
+      warn: console.warn,
+      error: console.error
+    };
+    
+    console.log = function(...args) {
+      // Call original method
+      originalConsole.log.apply(console, args);
+      
+      // Add to results
+      const logEntry = document.createElement('div');
+      logEntry.className = 'log-entry info';
+      logEntry.textContent = args.map(arg => {
+        if (typeof arg === 'object') {
+          try {
+            return JSON.stringify(arg);
+          } catch (e) {
+            return String(arg);
+          }
+        }
+        return String(arg);
+      }).join(' ');
+      
+      resultsEl.appendChild(logEntry);
+      resultsEl.scrollTop = resultsEl.scrollHeight;
+    };
+    
+    console.error = function(...args) {
+      // Call original method
+      originalConsole.error.apply(console, args);
+      
+      // Add to results
+      const logEntry = document.createElement('div');
+      logEntry.className = 'log-entry error';
+      logEntry.textContent = args.map(arg => {
+        if (typeof arg === 'object') {
+          try {
+            return JSON.stringify(arg);
+          } catch (e) {
+            return String(arg);
+          }
+        }
+        return String(arg);
+      }).join(' ');
+      
+      resultsEl.appendChild(logEntry);
+      resultsEl.scrollTop = resultsEl.scrollHeight;
+    };
+    
+    console.warn = function(...args) {
+      // Call original method
+      originalConsole.warn.apply(console, args);
+      
+      // Add to results
+      const logEntry = document.createElement('div');
+      logEntry.className = 'log-entry warn';
+      logEntry.textContent = args.map(arg => {
+        if (typeof arg === 'object') {
+          try {
+            return JSON.stringify(arg);
+          } catch (e) {
+            return String(arg);
+          }
+        }
+        return String(arg);
+      }).join(' ');
+      
+      resultsEl.appendChild(logEntry);
+      resultsEl.scrollTop = resultsEl.scrollHeight;
+    };
+    
+    // Set up event listeners
+    document.getElementById('mockRequestsBtn').addEventListener('click', function() {
+      testDevinExtension.mockDevinApiRequests();
+    });
+    
+    document.getElementById('clearRequestsBtn').addEventListener('click', function() {
+      window.devinNetworkMonitor?.clearRequests();
+      console.log('Cleared all requests');
+    });
+    
+    document.getElementById('testHelpBtn').addEventListener('click', function() {
+      console.log('Testing devin.help command:');
+      if (typeof window.devin?.help === 'function') {
+        window.devin.help();
+      } else {
+        console.error('devin.help command not found');
+      }
+    });
+    
+    document.getElementById('testRequestsBtn').addEventListener('click', function() {
+      console.log('Testing devin.requests command:');
+      if (typeof window.devin?.requests === 'function') {
+        window.devin.requests();
+      } else {
+        console.error('devin.requests command not found');
+      }
+    });
+    
+    document.getElementById('testSessionsBtn').addEventListener('click', function() {
+      console.log('Testing devin.sessions command:');
+      if (typeof window.devin?.sessions === 'function') {
+        window.devin.sessions();
+      } else {
+        console.error('devin.sessions command not found');
+      }
+    });
+    
+    document.getElementById('testMessagesBtn').addEventListener('click', function() {
+      console.log('Testing devin.messages command:');
+      if (typeof window.devin?.messages === 'function') {
+        window.devin.messages();
+      } else {
+        console.error('devin.messages command not found');
+      }
+    });
+    
+    document.getElementById('runAllTestsBtn').addEventListener('click', function() {
+      testDevinExtension.testExtension();
+    });
+    
+    // Initialize
+    console.log('Devin API Monitor Test Page Loaded');
+  </script>
+</body>
+</html>
