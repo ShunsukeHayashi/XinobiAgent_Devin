@@ -7,6 +7,7 @@ This server provides endpoints that mimic the behavior of the Devin API.
 import json
 import time
 import uuid
+import os
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
@@ -133,9 +134,11 @@ class MockDevinAPIHandler(BaseHTTPRequestHandler):
         
         # Login endpoint
         elif path == '/v1/auth/login' or path == '/v1/auth/token':
+            # Use environment variable for token or fallback to a placeholder
+            mock_token = os.environ.get('MOCK_DEVIN_TOKEN', 'MOCK_TOKEN_PLACEHOLDER')
             self._set_headers()
             self.wfile.write(json.dumps({
-                'token': 'mock-token-12345',
+                'token': mock_token,
                 'expires_in': 3600
             }).encode())
         
