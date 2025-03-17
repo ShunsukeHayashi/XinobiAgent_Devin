@@ -1,10 +1,10 @@
-# Enhanced Devin UI Usage Guide
+# Enhanced Devin Gradio UI Usage Guide
 
-This guide explains how to use the Enhanced Devin UI.
+This guide explains how to use the Enhanced Devin Gradio UI.
 
 ## Installation
 
-Before running the UI, make sure you have installed the required dependencies:
+Before running the UI, install the required dependencies:
 
 ```bash
 pip install gradio matplotlib numpy psutil
@@ -12,7 +12,7 @@ pip install gradio matplotlib numpy psutil
 
 ## Running the UI
 
-You can run the UI using the provided run script:
+You can run the UI using one of the provided scripts:
 
 ```bash
 # From the project root directory
@@ -39,7 +39,7 @@ The UI is organized into tabs:
 
 ### Sessions Tab
 
-- Create new sessions with a custom name
+- Create new sessions with custom names
 - Load existing sessions
 - View session information
 
@@ -62,12 +62,12 @@ The UI is organized into tabs:
 #### API Monitoring
 
 - View API requests
-- See request details
+- Check request details
 
 #### Performance
 
 - View system metrics
-- See performance charts
+- Check performance charts
 
 #### Logs
 
@@ -77,26 +77,26 @@ The UI is organized into tabs:
 
 ## API Key
 
-You can set your Devin API key in several ways:
+You can set the Devin API key in one of the following ways:
 
-1. Via the UI: Enter your API key in the text box at the top of the UI
+1. Via the UI: Enter the API key in the text box at the top of the UI
 2. Via environment variable: Set the `DEVIN_API_KEY` environment variable
 3. Via command line: Use the `--api-key` option when running the UI
 
-## Examples
+## Usage Examples
 
 ### Creating a Session and Sending a Message
 
 1. Go to the Sessions tab
-2. Enter a name for your session and click "Create Session"
+2. Enter a name for the session and click "Create Session"
 3. Go to the Chat tab
-4. Type your message and click "Send Message"
+4. Enter a message and click "Send Message"
 5. View the agent's response in the chat history
 
 ### Executing a Tool
 
 1. Go to the Tools tab
-2. Click "Refresh Tools" to see available tools
+2. Click "Refresh Tools" to view available tools
 3. Select a tool from the list to view its details
 4. Enter the tool name and parameters
 5. Click "Execute Tool" to run the tool
@@ -106,12 +106,12 @@ You can set your Devin API key in several ways:
 
 1. Go to the Monitoring tab
 2. Select the API Monitoring sub-tab
-3. Click "Refresh" to see recent API requests
+3. Click "Refresh" to view recent API requests
 4. Select a request to view its details
 
 ## Troubleshooting
 
-If you encounter any issues:
+If you encounter issues:
 
 - Check the logs in the Monitoring tab
 - Enable debug mode with the `--debug` flag
