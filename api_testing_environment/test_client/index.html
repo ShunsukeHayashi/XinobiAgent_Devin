@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devin API Test Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .card h2 {
+            margin-top: 0;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 12px 20px;
+            margin: 8px 0;
+            display: inline-block;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .response {
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        .tabs {
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background-color: #f1f1f1;
+            border-radius: 4px 4px 0 0;
+        }
+        .tabs button {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: 0.3s;
+            color: black;
+        }
+        .tabs button:hover {
+            background-color: #ddd;
+        }
+        .tabs button.active {
+            background-color: #ccc;
+        }
+        .tabcontent {
+            display: none;
+            padding: 6px 12px;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Devin API Test Client</h1>
+    
+    <div class="tabs">
+        <button class="tablinks active" onclick="openTab(event, 'Authentication')">Authentication</button>
+        <button class="tablinks" onclick="openTab(event, 'Sessions')">Sessions</button>
+        <button class="tablinks" onclick="openTab(event, 'Messages')">Messages</button>
+        <button class="tablinks" onclick="openTab(event, 'Attachments')">Attachments</button>
+        <button class="tablinks" onclick="openTab(event, 'TestScenarios')">Test Scenarios</button>
+    </div>
+    
+    <div id="Authentication" class="tabcontent" style="display: block;">
+        <div class="card">
+            <h2>Authentication</h2>
+            <div>
+                <label for="apiToken">API Token:</label>
+                <input type="text" id="apiToken" value="mock-token-12345">
+                <button onclick="setApiToken()">Set Token</button>
+            </div>
+            <div>
+                <button onclick="login()">Login (Get Token)</button>
+            </div>
+            <div class="response" id="authResponse"></div>
+        </div>
+    </div>
+    
+    <div id="Sessions" class="tabcontent">
+        <div class="card">
+            <h2>Create Session</h2>
+            <div>
+                <label for="prompt">Prompt:</label>
+                <textarea id="prompt" rows="3">Create a simple React app</textarea>
+                <button onclick="createSession()">Create Session</button>
+            </div>
+            <div class="response" id="createSessionResponse"></div>
+        </div>
+        
+        <div class="card">
+            <h2>Get Session Details</h2>
+            <div>
+                <label for="sessionId">Session ID:</label>
+                <input type="text" id="sessionId">
+                <button onclick="getSessionDetails()">Get Details</button>
+            </div>
+            <div class="response" id="sessionDetailsResponse"></div>
+        </div>
+    </div>
+    
+    <div id="Messages" class="tabcontent">
+        <div class="card">
+            <h2>Send Message</h2>
+            <div>
+                <label for="messageSessionId">Session ID:</label>
+                <input type="text" id="messageSessionId">
+                <label for="message">Message:</label>
+                <textarea id="message" rows="3">Add a login page</textarea>
+                <button onclick="sendMessage()">Send Message</button>
+            </div>
+            <div class="response" id="sendMessageResponse"></div>
+        </div>
+    </div>
+    
+    <div id="Attachments" class="tabcontent">
+        <div class="card">
+            <h2>Upload Attachment</h2>
+            <div>
+                <label for="filename">Filename:</label>
+                <input type="text" id="filename" value="example.txt">
+                <label for="contentType">Content Type:</label>
+                <input type="text" id="contentType" value="text/plain">
+                <label for="fileContent">File Content:</label>
+                <textarea id="fileContent" rows="3">This is a sample file content.</textarea>
+                <button onclick="uploadAttachment()">Upload</button>
+            </div>
+            <div class="response" id="uploadAttachmentResponse"></div>
+        </div>
+    </div>
+    
+    <div id="TestScenarios" class="tabcontent">
+        <div class="card">
+            <h2>Run Test Scenarios</h2>
+            <div>
+                <button onclick="runCompleteWorkflow()">Run Complete Workflow</button>
+                <button onclick="runAuthenticationFlow()">Run Authentication Flow</button>
+                <button onclick="runSessionFlow()">Run Session Flow</button>
+                <button onclick="runMessageFlow()">Run Message Flow</button>
+                <button onclick="runAttachmentFlow()">Run Attachment Flow</button>
+            </div>
+            <div class="response" id="testScenarioResponse"></div>
+        </div>
+    </div>
+    
+    <script>
+        // API configuration
+        const API_BASE_URL = 'http://localhost:8000/v1';
+        let apiToken = 'mock-token-12345';
+        
+        // Set API token
+        function setApiToken() {
+            apiToken = document.getElementById('apiToken').value;
+            document.getElementById('authResponse').textContent = `Token set: ${maskToken(apiToken)}`;
+        }
+        
+        // Mask token for display
+        function maskToken(token) {
+            if (token.length <= 8) return token;
+            return token.substring(0, 4) + '...' + token.substring(token.length - 4);
+        }
+        
+        // Login to get token
+        async function login() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'test@example.com',
+                        password: 'password123'
+                    })
+                });
+                
+                const data = await response.json();
+                apiToken = data.token;
+                document.getElementById('apiToken').value = apiToken;
+                document.getElementById('authResponse').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('authResponse').textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        // Create a new session
+        async function createSession() {
+            try {
+                const prompt = document.getElementById('prompt').value;
+                
+                const response = await fetch(`${API_BASE_URL}/sessions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiToken}`
+                    },
+                    body: JSON.stringify({
+                        prompt: prompt
+                    })
+                });
+                
+                const data = await response.json();
+                document.getElementById('createSessionResponse').textContent = JSON.stringify(data, null, 2);
+                
+                // Auto-fill session ID fields
+                if (data.session_id) {
+                    document.getElementById('sessionId').value = data.session_id;
+                    document.getElementById('messageSessionId').value = data.session_id;
+                }
+            } catch (error) {
+                document.getElementById('createSessionResponse').textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        // Get session details
+        async function getSessionDetails() {
+            try {
+                const sessionId = document.getElementById('sessionId').value;
+                
+                const response = await fetch(`${API_BASE_URL}/session/${sessionId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${apiToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                document.getElementById('sessionDetailsResponse').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('sessionDetailsResponse').textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        // Send a message
+        async function sendMessage() {
+            try {
+                const sessionId = document.getElementById('messageSessionId').value;
+                const message = document.getElementById('message').value;
+                
+                const response = await fetch(`${API_BASE_URL}/session/${sessionId}/message`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiToken}`
+                    },
+                    body: JSON.stringify({
+                        message: message
+                    })
+                });
+                
+                const data = await response.json();
+                document.getElementById('sendMessageResponse').textContent = JSON.stringify(data, null, 2);
+                
+                // Get updated session details
+                await getSessionDetails();
+            } catch (error) {
+                document.getElementById('sendMessageResponse').textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        // Upload an attachment
+        async function uploadAttachment() {
+            try {
+                const filename = document.getElementById('filename').value;
+                const contentType = document.getElementById('contentType').value;
+                const fileContent = document.getElementById('fileContent').value;
+                
+                const response = await fetch(`${API_BASE_URL}/attachments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiToken}`
+                    },
+                    body: JSON.stringify({
+                        filename: filename,
+                        content_type: contentType,
+                        content: fileContent
+                    })
+                });
+                
+                const data = await response.json();
+                document.getElementById('uploadAttachmentResponse').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('uploadAttachmentResponse').textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        // Run complete workflow
+        async function runCompleteWorkflow() {
+            document.getElementById('testScenarioResponse').textContent = 'Running complete workflow...';
+            
+            try {
+                // Login
+                await login();
+                
+                // Create session
+                await createSession();
+                
+                // Send message
+                await sendMessage();
+                
+                // Upload attachment
+                await uploadAttachment();
+                
+                document.getElementById('testScenarioResponse').textContent += '\nComplete workflow finished successfully!';
+            } catch (error) {
+                document.getElementById('testScenarioResponse').textContent += `\nError: ${error.message}`;
+            }
+        }
+        
+        // Run authentication flow
+        async function runAuthenticationFlow() {
+            document.getElementById('testScenarioResponse').textContent = 'Running authentication flow...';
+            
+            try {
+                // Login
+                await login();
+                
+                // Make authenticated request
+                const sessionId = document.getElementById('sessionId').value || 'test-session';
+                
+                const response = await fetch(`${API_BASE_URL}/session/${sessionId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${apiToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                document.getElementById('testScenarioResponse').textContent += '\nAuthentication flow finished!';
+                document.getElementById('testScenarioResponse').textContent += '\nResponse: ' + JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('testScenarioResponse').textContent += `\nError: ${error.message}`;
+            }
+        }
+        
+        // Run session flow
+        async function runSessionFlow() {
+            document.getElementById('testScenarioResponse').textContent = 'Running session flow...';
+            
+            try {
+                // Create session
+                await createSession();
+                
+                // Get session details
+                await getSessionDetails();
+                
+                document.getElementById('testScenarioResponse').textContent += '\nSession flow finished successfully!';
+            } catch (error) {
+                document.getElementById('testScenarioResponse').textContent += `\nError: ${error.message}`;
+            }
+        }
+        
+        // Run message flow
+        async function runMessageFlow() {
+            document.getElementById('testScenarioResponse').textContent = 'Running message flow...';
+            
+            try {
+                // Create session if needed
+                if (!document.getElementById('messageSessionId').value) {
+                    await createSession();
+                }
+                
+                // Send message
+                await sendMessage();
+                
+                document.getElementById('testScenarioResponse').textContent += '\nMessage flow finished successfully!';
+            } catch (error) {
+                document.getElementById('testScenarioResponse').textContent += `\nError: ${error.message}`;
+            }
+        }
+        
+        // Run attachment flow
+        async function runAttachmentFlow() {
+            document.getElementById('testScenarioResponse').textContent = 'Running attachment flow...';
+            
+            try {
+                // Upload attachment
+                await uploadAttachment();
+                
+                document.getElementById('testScenarioResponse').textContent += '\nAttachment flow finished successfully!';
+            } catch (error) {
+                document.getElementById('testScenarioResponse').textContent += `\nError: ${error.message}`;
+            }
+        }
+        
+        // Tab functionality
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+    </script>
+</body>
+</html>
