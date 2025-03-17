@@ -1,0 +1,15 @@
+# Canva Slide Generator Requirements
+
+# Core dependencies
+aiohttp>=3.8.0
+openai>=1.0.0
+pydantic>=2.0.0
+
+# Web interface
+gradio>=3.50.0
+
+# Canva API (placeholder - actual package may differ)
+# canva-sdk>=1.0.0
+
+# Utilities
+python-dotenv>=1.0.0
