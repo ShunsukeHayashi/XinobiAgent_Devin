@@ -1,426 +1,325 @@
 """
-GenericAgent implementation using the Working Backwards methodology.
-This implementation uses the new OpenAI API format.
+Generic Agent implementation that uses a Working Backwards methodology.
+This agent starts from the goal state and works backwards to create a plan,
+then executes the plan step by step using available tools.
 """
 
-import asyncio
-import json
-import logging
-from typing import Dict, List, Any, Optional, Union
+from typing import Dict, List, Optional, Any, Literal
 
-from openai import OpenAI
-from pydantic import BaseModel, Field
+from pydantic import Field, model_validator
 
+from app.agent.toolcall import ToolCallAgent
+from app.logger import logger
+from app.prompt.generic_agent import (
+    SYSTEM_PROMPT,
+    NEXT_STEP_PROMPT,
+    PLANNING_TEMPLATE,
+    EXECUTION_STATUS_TEMPLATE
+)
 from app.schema.message import Message
 from app.tool.collection import ToolCollection
-
-# Configure logging
-logger = logging.getLogger(__name__)
+from app.tool.terminate import Terminate
 
 
-class GenericAgent(BaseModel):
+class GenericAgent(ToolCallAgent):
     """
-    A generic agent that uses the Working Backwards methodology to solve problems.
-    This implementation uses the new OpenAI API format.
+    An agent that implements the Working Backwards methodology to solve problems.
+
+    This agent first clarifies the goal, then uses step-back questioning to identify
+    prerequisites for each step, working backwards until reaching actions that can be
+    taken from the current state. It then reorders these steps and executes them.
     """
-    
-    name: str = Field(description="Name of the agent")
-    description: str = Field(description="Description of the agent's purpose")
-    available_tools: Optional[ToolCollection] = Field(
-        default=None, 
-        description="Collection of tools available to the agent"
-    )
-    max_steps: int = Field(
-        default=15, 
-        description="Maximum number of steps the agent can take"
-    )
-    goal: Optional[str] = Field(
-        default=None,
-        description="The goal that the agent is trying to achieve"
-    )
-    
-    # Internal state tracking
-    memory: List[Dict[str, str]] = Field(
-        default_factory=list,
-        description="Memory of the agent's conversation"
-    )
-    backwards_steps: List[Dict[str, Any]] = Field(
-        default_factory=list,
-        description="Steps identified during backwards planning"
-    )
-    forward_plan: List[Dict[str, Any]] = Field(
-        default_factory=list,
-        description="Steps for forward execution"
-    )
-    completed_steps: List[Dict[str, Any]] = Field(
-        default_factory=list,
-        description="Steps that have been completed"
-    )
-    current_step_index: int = Field(
-        default=0,
-        description="Index of the current step in the forward plan"
-    )
-    plan_ready: bool = Field(
-        default=False,
-        description="Whether the plan is ready for execution"
-    )
-    
-    # OpenAI client
-    _client: Optional[OpenAI] = None
-    
-    class Config:
-        arbitrary_types_allowed = True
-    
+
+    name: str = "generic_agent"
+    description: str = "A general-purpose agent that uses Working Backwards methodology to solve tasks"
+
+    system_prompt: str = SYSTEM_PROMPT
+    next_step_prompt: str = NEXT_STEP_PROMPT
+
+    # Tracking goal and plan
+    goal_state: str = Field(default="")
+    current_state: str = Field(default="")
+    current_progress: str = Field(default="No progress yet. Planning phase.")
+
+    # Working backwards tracking
+    backwards_steps: List[Dict[str, Any]] = Field(default_factory=list)
+    forward_plan: List[Dict[str, Any]] = Field(default_factory=list)
+
+    # Execution tracking
+    plan_ready: bool = Field(default=False)
+    current_step_index: int = Field(default=0)
+    completed_steps: List[Dict[str, Any]] = Field(default_factory=list)
+    pending_steps: List[Dict[str, Any]] = Field(default_factory=list)
+
+    # Additional state for flexibility
+    state_variables: Dict[str, Any] = Field(default_factory=dict)
+
+    max_steps: int = 30
+
     def __init__(self, **data):
+        """Initialize the GenericAgent with custom tools if provided."""
+        # If no tools are provided, add a basic set
+        if "available_tools" not in data:
+            data["available_tools"] = ToolCollection([Terminate()])
+        
+        # Ensure Terminate tool is always available
+        terminate_tool_exists = False
+        for tool in data.get("available_tools", []):
+            if isinstance(tool, Terminate) or (hasattr(tool, "name") and tool.name == "terminate"):
+                terminate_tool_exists = True
+                break
+                
+        if not terminate_tool_exists and "available_tools" in data:
+            data["available_tools"].add_tool(Terminate())
+            
         super().__init__(**data)
-        self._client = OpenAI()
-    
-    async def set_goal(self, goal: str) -> None:
+
+    @model_validator(mode="after")
+    def validate_agent_state(self) -> "GenericAgent":
+        """Validate the agent's state and ensure all required fields are initialized."""
+        if not self.goal_state:
+            self.goal_state = "Not yet specified"
+            
+        if not self.current_state:
+            self.current_state = "Initial state"
+            
+        # Ensure special tools are properly tracked
+        terminate_names = ["terminate", "finish", "complete"]
+        self.special_tool_names = list(set(self.special_tool_names + [
+            tool for tool in terminate_names if tool in [t.name for t in self.available_tools.tools]
+        ]))
+            
+        return self
+        
+    async def set_goal(self, goal: str) -> str:
         """
-        Set the goal for the agent to achieve.
+        Set the agent's goal state.
         
         Args:
-            goal: The goal to achieve
-        """
-        self.goal = goal
-        self.update_memory("system", f"Your goal is to: {goal}")
-    
-    def update_memory(self, role: str, content: str) -> None:
-        """
-        Update the agent's memory with a new message.
-        
-        Args:
-            role: The role of the message sender (system, user, assistant)
-            content: The content of the message
-        """
-        self.memory.append({"role": role, "content": content})
-        
-    def _extract_text_from_response(self, response) -> str:
-        """
-        Extract text from an OpenAI API response.
-        
-        Args:
-            response: The OpenAI API response
+            goal: The goal state the agent should work towards.
             
         Returns:
-            The extracted text as a string
+            A confirmation message.
         """
-        text = ""
-        if response.output and len(response.output) > 0:
-            for output_item in response.output:
-                if hasattr(output_item, 'content') and output_item.content:
-                    for content_item in output_item.content:
-                        if hasattr(content_item, 'text') and content_item.text:
-                            text += content_item.text
-        return text
-    
-    async def run(self, goal: Optional[str] = None) -> str:
-        """
-        Run the agent to achieve the specified goal.
+        self.goal_state = goal
+        logger.info(f"Goal set: {goal}")
         
-        Args:
-            goal: The goal to achieve, if not already set
-            
+        # Clear previous plan if it exists
+        self.backwards_steps = []
+        self.forward_plan = []
+        self.plan_ready = False
+        self.current_step_index = 0
+        self.completed_steps = []
+        self.pending_steps = []
+        
+        # Add goal setting message to memory
+        self.update_memory("system", f"Goal set: {goal}")
+        
+        # Generate initial clarification of the goal
+        goal_clarification_msg = Message(
+            role="user",
+            content=f"My goal is: {goal}\n\nPlease clarify this goal in concrete, specific terms "
+            f"and begin the Working Backwards analysis to determine how to achieve it."
+        )
+        self.messages.append(goal_clarification_msg)
+        
+        return f"Goal set to: {goal}. I will now analyze this goal and work backwards to create a plan."
+
+    async def think(self) -> bool:
+        """
+        Process the current state and decide the next action using Working Backwards methodology.
+        
         Returns:
-            A summary of the execution
+            bool: True if there are actions to take, False otherwise.
         """
-        if goal:
-            await self.set_goal(goal)
-        
-        if not self.goal:
-            raise ValueError("Goal must be set before running the agent")
-        
-        # First, plan by working backwards from the goal
-        await self._plan_backwards()
-        
-        # Then, execute the plan forwards
-        result = await self._execute_plan()
-        
-        return result
-    
-    async def _plan_backwards(self) -> None:
-        """
-        Plan by working backwards from the goal to the initial state.
-        This uses the Working Backwards methodology.
-        """
-        # Start with the goal
-        self.update_memory("system", "Plan by working backwards from the goal. What is the final step needed to achieve the goal?")
-        
-        # Use the new OpenAI API format for planning
-        response = self._client.responses.create(
-            model="gpt-4o",
-            input=[
-                {
-                    "role": "system",
-                    "content": f"You are a planning agent that uses the Working Backwards methodology. Your goal is: {self.goal}"
-                },
-                {
-                    "role": "user",
-                    "content": "What is the final step needed to achieve the goal?"
-                }
-            ],
-            text={
-                "format": {
-                    "type": "text"
-                }
-            },
-            reasoning={},
-            tools=[],
-            temperature=0.7,
-            max_output_tokens=2048,
-            top_p=1,
-            store=True
+        formatted_prompt = NEXT_STEP_PROMPT.format(
+            goal_state=self.goal_state,
+            current_progress=self.current_progress,
+            current_state=self.current_state
         )
         
-        # Extract the response text using helper method
-        final_step_description = self._extract_text_from_response(response)
+        # Add next step prompt to memory
+        self.messages.append(Message(role="user", content=formatted_prompt))
         
-        # Add the final step to the backwards steps
-        final_step = {
-            "description": final_step_description,
-            "prerequisites": [],
-            "tools_needed": []
-        }
-        self.backwards_steps.append(final_step)
+        # Get response with tool options
+        # This is a placeholder - in a real implementation, this would call an LLM
+        # and parse the response to identify tool calls
         
-        # Continue working backwards until we reach the initial state
-        current_step = final_step
-        max_backwards_steps = 10  # Limit to prevent infinite loops
-        
-        for i in range(max_backwards_steps):
-            # Ask what needs to be done before the current step
-            step_query = f"What needs to be done before this step: '{current_step['description']}'?"
-            self.update_memory("system", step_query)
-            
-            # Use the new OpenAI API format for step-back questioning
-            response = self._client.responses.create(
-                model="gpt-4o",
-                input=[
-                    {
-                        "role": "system",
-                        "content": f"You are a planning agent that uses the Working Backwards methodology. Your goal is: {self.goal}"
-                    },
-                    {
-                        "role": "user",
-                        "content": step_query
-                    }
-                ],
-                text={
-                    "format": {
-                        "type": "text"
-                    }
-                },
-                reasoning={},
-                tools=[],
-                temperature=0.7,
-                max_output_tokens=2048,
-                top_p=1,
-                store=True
-            )
-            
-            # Extract the response text using helper method
-            previous_step_description = self._extract_text_from_response(response)
-            
-            # Check if we've reached the initial state
-            if "initial state" in previous_step_description.lower() or "already at initial state" in previous_step_description.lower():
-                break
-            
-            # Add the previous step to the backwards steps
+        # For demonstration purposes, we'll simulate a response
+        # In a real implementation, this would be replaced with an actual LLM call
+        if not self.plan_ready and not self.backwards_steps:
+            # First step - identify the final step
+            final_step = {
+                "description": f"Achieve the goal: {self.goal_state}",
+                "prerequisites": ["All previous steps must be completed"],
+                "tools_needed": []
+            }
+            self.backwards_steps.append(final_step)
+            return True
+        elif not self.plan_ready and len(self.backwards_steps) < 5:
+            # Continue working backwards
             previous_step = {
-                "description": previous_step_description,
-                "prerequisites": [],
+                "description": f"Step {len(self.backwards_steps) + 1} towards {self.goal_state}",
+                "prerequisites": [f"Step {len(self.backwards_steps)} must be prepared"],
                 "tools_needed": []
             }
             self.backwards_steps.append(previous_step)
-            
-            # Update the current step
-            current_step = previous_step
+            return True
+        elif not self.plan_ready:
+            # If we have enough steps, organize the plan
+            await self._organize_plan()
+            return True
+        elif self.current_step_index < len(self.forward_plan):
+            # Execute the next step in the plan
+            current_step = self.forward_plan[self.current_step_index]
+            # Simulate a tool call
+            from app.agent.toolcall import ToolCall
+            self.tool_calls.append(ToolCall(
+                tool_name="bash",
+                tool_args={"command": f"echo 'Executing step {self.current_step_index + 1}: {current_step['description']}'"}
+            ))
+            return True
         
-        # Create the forward plan by reversing the backwards steps
-        self.forward_plan = list(reversed(self.backwards_steps))
-        self.plan_ready = True
-    
-    async def _execute_plan(self) -> str:
+        # No more actions to take
+        return False
+
+    async def act(self) -> str:
         """
-        Execute the plan by following the steps in order.
+        Execute decided actions and update plan progress.
         
         Returns:
-            A summary of the execution
+            str: Result of the action.
         """
-        if not self.plan_ready:
-            raise ValueError("Plan must be ready before execution")
+        # Execute the action
+        result = await super().act()
         
-        # Execute each step in the forward plan
-        for i, step in enumerate(self.forward_plan):
-            self.current_step_index = i
-            
-            # Execute the current step
-            step_result = await self._execute_step(step)
-            
-            # Add the result to the step
-            step["result"] = step_result
-            
-            # Add the completed step to the list
-            self.completed_steps.append(step)
+        # Update plan status if we have a plan
+        if self.plan_ready and self.forward_plan:
+            # Find the current step and mark it as completed
+            if self.current_step_index < len(self.forward_plan):
+                completed_step = self.forward_plan[self.current_step_index].copy()
+                completed_step["result"] = result
+                self.completed_steps.append(completed_step)
+                
+                # Update progress tracking
+                self.current_progress = (
+                    f"Completed {len(self.completed_steps)}/{len(self.forward_plan)} steps. "
+                    f"Last completed: {completed_step.get('description', 'Step')}"
+                )
+                
+                # Move to next step
+                self.current_step_index += 1
+                
+                # Update pending steps
+                self.pending_steps = self.forward_plan[self.current_step_index:] if self.current_step_index < len(self.forward_plan) else []
+                
+                logger.info(f"Completed step {self.current_step_index}/{len(self.forward_plan)}: {result[:100]}...")
         
-        # Generate a summary of the execution
-        summary = await self._generate_summary()
-        
-        return summary
-    
-    async def _execute_step(self, step: Dict[str, Any]) -> str:
+        return result
+
+    async def run(self, request: Optional[str] = None) -> str:
         """
-        Execute a single step in the plan.
+        Execute the agent's main workflow.
         
         Args:
-            step: The step to execute
+            request: Initial request or goal for the agent.
             
         Returns:
-            The result of executing the step
+            str: Summary of execution results.
         """
-        # Determine which tools to use for this step
-        tools_to_use = []
-        if self.available_tools:
-            tools_to_use = [tool.name for tool in self.available_tools.tools]
-        
-        # Use the new OpenAI API format for step execution
-        response = self._client.responses.create(
-            model="gpt-4o",
-            input=[
-                {
-                    "role": "system",
-                    "content": f"You are an execution agent that executes steps to achieve a goal. Your goal is: {self.goal}"
-                },
-                {
-                    "role": "user",
-                    "content": f"Execute this step: {step['description']}. Available tools: {', '.join(tools_to_use)}"
-                }
-            ],
-            text={
-                "format": {
-                    "type": "text"
-                }
-            },
-            reasoning={},
-            tools=[],
-            temperature=0.7,
-            max_output_tokens=2048,
-            top_p=1,
-            store=True
+        if request:
+            await self.set_goal(request)
+            
+        return await super().run()
+
+    async def _organize_plan(self) -> None:
+        """
+        Organize the backwards steps into a forward execution plan.
+        This reverses the order of steps and prepares them for execution.
+        """
+        if not self.backwards_steps:
+            return
+            
+        # Prepare to create the forward plan using LLM
+        planning_prompt = PLANNING_TEMPLATE.format(
+            goal=self.goal_state,
+            current_state=self.current_state,
+            backwards_analysis="\n".join([f"{i+1}. {step.get('description', 'Step')}" for i, step in enumerate(self.backwards_steps)]),
+            forward_plan="To be determined",
+            tools_required=", ".join([tool.name for tool in self.available_tools.tools]),
+            success_criteria="To be determined",
+            potential_challenges="To be determined",
+            monitoring_approach="To be determined"
         )
         
-        # Extract the response text using helper method
-        execution_plan = self._extract_text_from_response(response)
+        # Ask LLM to create the forward plan
+        # In a real implementation, this would be an actual LLM call
+        # For demonstration purposes, we'll just reverse the backwards steps
         
-        # Determine if we need to use a tool
-        tool_to_use = None
-        tool_args = {}
+        # Create simple forward plan by reversing backwards steps
+        self.forward_plan = list(reversed(self.backwards_steps))
         
-        # Parse the execution plan to identify tool usage
-        if "use tool:" in execution_plan.lower():
-            # Extract tool name and arguments
-            tool_lines = [line for line in execution_plan.split('\n') if "use tool:" in line.lower()]
-            if tool_lines:
-                tool_line = tool_lines[0]
-                tool_parts = tool_line.split("use tool:", 1)[1].strip().split(" ", 1)
-                tool_name = tool_parts[0].strip()
-                
-                # Find the tool in the available tools
-                if self.available_tools:
-                    for tool in self.available_tools.tools:
-                        if tool.name.lower() == tool_name.lower():
-                            tool_to_use = tool
-                            
-                            # Extract arguments if provided
-                            if len(tool_parts) > 1:
-                                try:
-                                    # Try to parse as JSON
-                                    tool_args = json.loads(tool_parts[1])
-                                except json.JSONDecodeError:
-                                    # If not JSON, use as a single argument
-                                    tool_args = {"input": tool_parts[1].strip()}
-                            break
+        # Mark the plan as ready
+        self.plan_ready = True
+        self.pending_steps = self.forward_plan.copy()
         
-        # Execute the tool if needed
-        if tool_to_use:
-            try:
-                # Execute the tool with the provided arguments
-                tool_result = await tool_to_use.run(**tool_args)
-                
-                # Update the step with the tool used and result
-                step["tool_used"] = tool_to_use.name
-                step["tool_args"] = tool_args
-                
-                return f"Used tool '{tool_to_use.name}' with result: {tool_result}"
-            except Exception as e:
-                error_message = f"Error executing tool '{tool_to_use.name}': {str(e)}"
-                logger.error(error_message)
-                return error_message
+        # Log the plan creation
+        plan_summary = "\n".join([f"{i+1}. {step.get('description', 'Step')}" for i, step in enumerate(self.forward_plan)])
+        logger.info(f"Forward execution plan created with {len(self.forward_plan)} steps:\n{plan_summary}")
         
-        # If no tool was used, return the execution plan
-        return execution_plan
-    
-    async def _generate_summary(self) -> str:
+        # Add the plan to memory
+        self.update_memory("system", f"Forward execution plan created with {len(self.forward_plan)} steps:\n{plan_summary}")
+
+    def _update_execution_status(self) -> str:
         """
-        Generate a summary of the execution.
+        Create a formatted status of the execution plan.
         
         Returns:
-            A summary of the execution
+            str: Formatted execution status.
         """
-        # Use the new OpenAI API format for summary generation
-        response = self._client.responses.create(
-            model="gpt-4o",
-            input=[
-                {
-                    "role": "system",
-                    "content": f"You are a summary agent that summarizes the execution of a plan. The goal was: {self.goal}"
-                },
-                {
-                    "role": "user",
-                    "content": f"Summarize the execution of the plan. {len(self.completed_steps)} steps were completed out of {len(self.forward_plan)} total steps."
-                }
-            ],
-            text={
-                "format": {
-                    "type": "text"
-                }
-            },
-            reasoning={},
-            tools=[],
-            temperature=0.7,
-            max_output_tokens=2048,
-            top_p=1,
-            store=True
+        if not self.plan_ready:
+            return "Plan is still being formulated."
+            
+        plan_steps = "\n".join([f"{i+1}. {step.get('description', 'Step')}" for i, step in enumerate(self.forward_plan)])
+        completed_steps = "\n".join([f"✓ {i+1}. {step.get('description', 'Step')}" for i, step in enumerate(self.completed_steps)])
+        pending_steps = "\n".join([f"○ {self.current_step_index+i+1}. {step.get('description', 'Step')}" for i, step in enumerate(self.pending_steps)])
+        
+        current_step = (
+            f"Currently executing step {self.current_step_index+1}/{len(self.forward_plan)}: "
+            f"{self.forward_plan[self.current_step_index].get('description', 'Step')}"
+            if self.current_step_index < len(self.forward_plan) else "All steps completed."
         )
         
-        # Extract the response text using helper method
-        summary = self._extract_text_from_response(response)
+        return EXECUTION_STATUS_TEMPLATE.format(
+            goal=self.goal_state,
+            plan_steps=plan_steps,
+            current_step=current_step,
+            completed_steps=completed_steps if self.completed_steps else "None yet.",
+            pending_steps=pending_steps if self.pending_steps else "None remaining.",
+            observations=self.current_progress,
+            adjustments="None required at this time."
+        )
+
+    def add_backward_step(self, description: str, tools_needed: List[str], prerequisites: List[str]) -> None:
+        """
+        Add a step to the backwards planning process.
         
-        return summary
-    
+        Args:
+            description: Description of this step
+            tools_needed: Tools required for this step
+            prerequisites: What must be true before this step
+        """
+        self.backwards_steps.append({
+            "description": description,
+            "tools_needed": tools_needed,
+            "prerequisites": prerequisites
+        })
+        
     async def get_execution_status(self) -> str:
         """
         Get the current execution status.
         
         Returns:
-            A formatted string showing the current execution status
+            str: Formatted execution status.
         """
-        status = f"Goal: {self.goal}\n\n"
-        
-        if not self.plan_ready:
-            status += "Planning in progress...\n"
-        else:
-            status += f"Plan: {len(self.forward_plan)} steps\n"
-            status += f"Completed: {len(self.completed_steps)} steps\n\n"
-            
-            for i, step in enumerate(self.forward_plan):
-                if i < self.current_step_index:
-                    status += f"✅ Step {i+1}: {step['description']}\n"
-                    if "result" in step:
-                        status += f"   Result: {step['result'][:100]}...\n" if len(step['result']) > 100 else f"   Result: {step['result']}\n"
-                elif i == self.current_step_index:
-                    status += f"🔄 Step {i+1}: {step['description']} (in progress)\n"
-                else:
-                    status += f"⏳ Step {i+1}: {step['description']}\n"
-        
-        return status
+        return self._update_execution_status()
