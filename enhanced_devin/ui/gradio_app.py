@@ -86,9 +86,8 @@ class EnhancedDevinUI:
                                 self.refresh_sessions_btn = gr.Button("Refresh")
                     
                     # Session info
-                    with gr.Box():
-                        gr.Markdown("### Session Information")
-                        self.session_info = gr.JSON(label="Session Details")
+                    gr.Markdown("### Session Information")
+                    self.session_info = gr.JSON(label="Session Details")
                 
                 # Chat tab
                 with gr.TabItem("Chat"):
