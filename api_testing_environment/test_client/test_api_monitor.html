@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devin API Monitor Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        .output {
+            min-height: 100px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Devin API Monitor Test</h1>
+        
+        <div class="card">
+            <h2>Load Monitoring Scripts</h2>
+            <div class="btn-group">
+                <button onclick="loadApiMonitor()">Load API Monitor</button>
+                <button onclick="loadAuthMonitor()">Load Auth Monitor</button>
+                <button onclick="loadSessionMonitor()">Load Session Monitor</button>
+                <button onclick="loadCombinedMonitor()">Load Combined Monitor</button>
+            </div>
+            <pre id="loadOutput" class="output"></pre>
+        </div>
+        
+        <div class="card">
+            <h2>Run Test Scenarios</h2>
+            <div class="btn-group">
+                <button onclick="runCompleteWorkflow()">Complete Workflow</button>
+                <button onclick="runAuthFlow()">Authentication Flow</button>
+                <button onclick="runSessionManagement()">Session Management</button>
+                <button onclick="runMessageExchange()">Message Exchange</button>
+            </div>
+            <pre id="testOutput" class="output"></pre>
+        </div>
+        
+        <div class="card">
+            <h2>Monitoring Results</h2>
+            <div class="btn-group">
+                <button onclick="showApiRequests()">Show API Requests</button>
+                <button onclick="showAuthEvents()">Show Auth Events</button>
+                <button onclick="showSessions()">Show Sessions</button>
+                <button onclick="generateSummary()">Generate Summary</button>
+                <button onclick="exportData()">Export Data</button>
+            </div>
+            <pre id="monitorOutput" class="output"></pre>
+        </div>
+    </div>
+
+    <script>
+        // API configuration
+        const API_BASE_URL = 'http://localhost:8000/v1';
+        
+        // Load monitoring scripts
+        function loadScript(url, callback) {
+            const script = document.createElement('script');
+            script.src = url;
+            script.onload = callback;
+            script.onerror = (error) => {
+                document.getElementById('loadOutput').textContent += `Failed to load script: ${url}\n`;
+                console.error('Script load error:', error);
+            };
+            document.head.appendChild(script);
+        }
+        
+        function loadApiMonitor() {
+            document.getElementById('loadOutput').textContent = 'Loading API Monitor...\n';
+            loadScript('scripts/api_monitor.js', () => {
+                document.getElementById('loadOutput').textContent += 'API Monitor loaded successfully\n';
+            });
+        }
+        
+        function loadAuthMonitor() {
+            document.getElementById('loadOutput').textContent = 'Loading Auth Monitor...\n';
+            loadScript('scripts/auth_monitor.js', () => {
+                document.getElementById('loadOutput').textContent += 'Auth Monitor loaded successfully\n';
+            });
+        }
+        
+        function loadSessionMonitor() {
+            document.getElementById('loadOutput').textContent = 'Loading Session Monitor...\n';
+            loadScript('scripts/session_monitor.js', () => {
+                document.getElementById('loadOutput').textContent += 'Session Monitor loaded successfully\n';
+            });
+        }
+        
+        function loadCombinedMonitor() {
+            document.getElementById('loadOutput').textContent = 'Loading Combined Monitor...\n';
+            loadScript('scripts/combined_monitor.js', () => {
+                document.getElementById('loadOutput').textContent += 'Combined Monitor loaded successfully\n';
+            });
+        }
+        
+        // Test scenarios
+        async function runCompleteWorkflow() {
+            document.getElementById('testOutput').textContent = 'Running complete workflow test...\n';
+            
+            try {
+                // 1. Get token
+                const tokenResponse = await fetch(`${API_BASE_URL}/auth/token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'test_user',
+                        password: 'test_password'
+                    })
+                });
+                
+                const tokenData = await tokenResponse.json();
+                const token = tokenData.token;
+                
+                // Store token in localStorage
+                localStorage.setItem('devin_token', token);
+                
+                // 2. Create session
+                const sessionResponse = await fetch(`${API_BASE_URL}/sessions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        prompt: 'Create a React app with authentication'
+                    })
+                });
+                
+                const sessionData = await sessionResponse.json();
+                const sessionId = sessionData.session_id;
+                
+                // 3. Send message
+                const messageResponse = await fetch(`${API_BASE_URL}/session/${sessionId}/message`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        message: 'Add a login page with JWT authentication'
+                    })
+                });
+                
+                const messageData = await messageResponse.json();
+                
+                // 4. Get session details
+                const sessionDetailsResponse = await fetch(`${API_BASE_URL}/session/${sessionId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const sessionDetails = await sessionDetailsResponse.json();
+                
+                const result = {
+                    token: token,
+                    sessionId: sessionId,
+                    sessionDetails: sessionDetails
+                };
+                
+                document.getElementById('testOutput').textContent += `Complete workflow test completed successfully\n`;
+                document.getElementById('testOutput').textContent += `Result: ${JSON.stringify(result, null, 2)}\n`;
+            } catch (error) {
+                document.getElementById('testOutput').textContent += `Error in complete workflow test: ${error.message}\n`;
+                console.error('Error in complete workflow test:', error);
+            }
+        }
+        
+        async function runAuthFlow() {
+            document.getElementById('testOutput').textContent = 'Running authentication flow test...\n';
+            
+            try {
+                // Get token
+                const tokenResponse = await fetch(`${API_BASE_URL}/auth/token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'test_user',
+                        password: 'test_password'
+                    })
+                });
+                
+                const tokenData = await tokenResponse.json();
+                const token = tokenData.token;
+                
+                // Store token in localStorage
+                localStorage.setItem('devin_token', token);
+                
+                // Retrieve token from localStorage
+                const storedToken = localStorage.getItem('devin_token');
+                
+                const result = {
+                    token: token,
+                    storedToken: storedToken
+                };
+                
+                document.getElementById('testOutput').textContent += `Authentication flow test completed successfully\n`;
+                document.getElementById('testOutput').textContent += `Result: ${JSON.stringify(result, null, 2)}\n`;
+            } catch (error) {
+                document.getElementById('testOutput').textContent += `Error in authentication flow test: ${error.message}\n`;
+                console.error('Error in authentication flow test:', error);
+            }
+        }
+        
+        async function runSessionManagement() {
+            document.getElementById('testOutput').textContent = 'Running session management test...\n';
+            
+            try {
+                // Get token
+                const tokenResponse = await fetch(`${API_BASE_URL}/auth/token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'test_user',
+                        password: 'test_password'
+                    })
+                });
+                
+                const tokenData = await tokenResponse.json();
+                const token = tokenData.token;
+                
+                // Create session 1
+                const session1Response = await fetch(`${API_BASE_URL}/sessions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        prompt: 'Create a Python script'
+                    })
+                });
+                
+                const session1Data = await session1Response.json();
+                const session1Id = session1Data.session_id;
+                
+                // Create session 2
+                const session2Response = await fetch(`${API_BASE_URL}/sessions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        prompt: 'Create a JavaScript app'
+                    })
+                });
+                
+                const session2Data = await session2Response.json();
+                const session2Id = session2Data.session_id;
+                
+                // Get session 1 details
+                const session1DetailsResponse = await fetch(`${API_BASE_URL}/session/${session1Id}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const session1Details = await session1DetailsResponse.json();
+                
+                const result = {
+                    session1Id: session1Id,
+                    session2Id: session2Id,
+                    session1Details: session1Details
+                };
+                
+                document.getElementById('testOutput').textContent += `Session management test completed successfully\n`;
+                document.getElementById('testOutput').textContent += `Result: ${JSON.stringify(result, null, 2)}\n`;
+            } catch (error) {
+                document.getElementById('testOutput').textContent += `Error in session management test: ${error.message}\n`;
+                console.error('Error in session management test:', error);
+            }
+        }
+        
+        async function runMessageExchange() {
+            document.getElementById('testOutput').textContent = 'Running message exchange test...\n';
+            
+            try {
+                // Get token
+                const tokenResponse = await fetch(`${API_BASE_URL}/auth/token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'test_user',
+                        password: 'test_password'
+                    })
+                });
+                
+                const tokenData = await tokenResponse.json();
+                const token = tokenData.token;
+                
+                // Create session
+                const sessionResponse = await fetch(`${API_BASE_URL}/sessions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        prompt: 'Create a React app'
+                    })
+                });
+                
+                const sessionData = await sessionResponse.json();
+                const sessionId = sessionData.session_id;
+                
+                // Send message 1
+                const message1Response = await fetch(`${API_BASE_URL}/session/${sessionId}/message`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        message: 'Add a login page'
+                    })
+                });
+                
+                const message1Data = await message1Response.json();
+                
+                // Send message 2
+                const message2Response = await fetch(`${API_BASE_URL}/session/${sessionId}/message`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        message: 'Add a registration page'
+                    })
+                });
+                
+                const message2Data = await message2Response.json();
+                
+                const result = {
+                    sessionId: sessionId,
+                    message1: message1Data,
+                    message2: message2Data
+                };
+                
+                document.getElementById('testOutput').textContent += `Message exchange test completed successfully\n`;
+                document.getElementById('testOutput').textContent += `Result: ${JSON.stringify(result, null, 2)}\n`;
+            } catch (error) {
+                document.getElementById('testOutput').textContent += `Error in message exchange test: ${error.message}\n`;
+                console.error('Error in message exchange test:', error);
+            }
+        }
+        
+        // Monitoring results
+        function showApiRequests() {
+            try {
+                if (window.devinApi) {
+                    const requests = window.devinApi.getRequests();
+                    document.getElementById('monitorOutput').textContent = JSON.stringify(requests, null, 2);
+                } else if (window.devin) {
+                    const requests = window.devin.getRequests();
+                    document.getElementById('monitorOutput').textContent = JSON.stringify(requests, null, 2);
+                } else {
+                    document.getElementById('monitorOutput').textContent = 'API Monitor not loaded';
+                }
+            } catch (error) {
+                document.getElementById('monitorOutput').textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        function showAuthEvents() {
+            try {
+                if (window.devinAuth) {
+                    const events = window.devinAuth.getEvents();
+                    document.getElementById('monitorOutput').textContent = JSON.stringify(events, null, 2);
+                } else if (window.devin) {
+                    const events = window.devin.getAuthEvents();
+                    document.getElementById('monitorOutput').textContent = JSON.stringify(events, null, 2);
+                } else {
+                    document.getElementById('monitorOutput').textContent = 'Auth Monitor not loaded';
+                }
+            } catch (error) {
+                document.getElementById('monitorOutput').textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        function showSessions() {
+            try {
+                if (window.devinSession) {
+                    const sessions = window.devinSession.getSessions();
+                    document.getElementById('monitorOutput').textContent = JSON.stringify(sessions, null, 2);
+                } else if (window.devin) {
+                    const sessions = window.devin.getSessions();
+                    document.getElementById('monitorOutput').textContent = JSON.stringify(sessions, null, 2);
+                } else {
+                    document.getElementById('monitorOutput').textContent = 'Session Monitor not loaded';
+                }
+            } catch (error) {
+                document.getElementById('monitorOutput').textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        function generateSummary() {
+            try {
+                let summary = {};
+                
+                if (window.devinApi) {
+                    summary.api = window.devinApi.summarize();
+                }
+                
+                if (window.devinAuth) {
+                    summary.auth = window.devinAuth.summarize();
+                }
+                
+                if (window.devinSession) {
+                    summary.session = window.devinSession.summarize();
+                }
+                
+                if (window.devin) {
+                    summary.combined = window.devin.summarize();
+                }
+                
+                if (Object.keys(summary).length > 0) {
+                    document.getElementById('monitorOutput').textContent = JSON.stringify(summary, null, 2);
+                } else {
+                    document.getElementById('monitorOutput').textContent = 'No monitors loaded';
+                }
+            } catch (error) {
+                document.getElementById('monitorOutput').textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        function exportData() {
+            try {
+                if (window.devin) {
+                    window.devin.export();
+                    document.getElementById('monitorOutput').textContent = 'Data exported';
+                } else {
+                    let exported = false;
+                    
+                    if (window.devinApi) {
+                        window.devinApi.export();
+                        exported = true;
+                    }
+                    
+                    if (window.devinAuth) {
+                        window.devinAuth.export();
+                        exported = true;
+                    }
+                    
+                    if (window.devinSession) {
+                        window.devinSession.export();
+                        exported = true;
+                    }
+                    
+                    if (exported) {
+                        document.getElementById('monitorOutput').textContent = 'Data exported';
+                    } else {
+                        document.getElementById('monitorOutput').textContent = 'No monitors loaded';
+                    }
+                }
+            } catch (error) {
+                document.getElementById('monitorOutput').textContent = `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

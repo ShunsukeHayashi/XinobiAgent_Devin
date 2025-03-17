@@ -132,7 +132,7 @@ class MockDevinAPIHandler(BaseHTTPRequestHandler):
             }).encode())
         
         # Login endpoint
-        elif path == '/v1/auth/login':
+        elif path == '/v1/auth/login' or path == '/v1/auth/token':
             self._set_headers()
             self.wfile.write(json.dumps({
                 'token': 'mock-token-12345',
