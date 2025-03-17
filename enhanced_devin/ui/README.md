@@ -11,42 +11,52 @@ The Enhanced Devin UI provides a web-based interface for interacting with the En
 - Execute tools
 - Monitor API requests, performance metrics, and logs
 
-## Components
+## Documentation
 
-- `gradio_app.py`: Defines the `EnhancedDevinUI` class, which creates the Gradio interface
-- `app.py`: Entry point for running the UI
-- `__init__.py`: Package initialization file
+The UI includes comprehensive documentation in both English and Japanese:
 
-## Usage
+- [Usage Guide (English)](README_USAGE.md)
+- [Usage Guide (Japanese)](README_USAGE_JA.md)
+- [Installation Guide (English)](INSTALLATION.md)
+- [Installation Guide (Japanese)](INSTALLATION_JA.md)
+- [Verification Guide (English)](VERIFICATION.md)
+- [Verification Guide (Japanese)](VERIFICATION_JA.md)
+- [Troubleshooting Guide (English)](TROUBLESHOOTING.md)
+- [Troubleshooting Guide (Japanese)](TROUBLESHOOTING_JA.md)
+- [Screenshot Guide (English)](SCREENSHOTS.md)
+- [Screenshot Guide (Japanese)](SCREENSHOTS_JA.md)
+- [Simple UI Guide](README_SIMPLE.md)
+
+## Running the UI
 
 To run the UI, use the following command:
 
 ```bash
-python -m enhanced_devin.ui.app --port 7860 --share
+python run_simple_gradio_ui.py --share
 ```
 
-Command line options:
+This will start the UI and provide a public URL that can be accessed from any browser.
 
-- `--api-key`: API key for Devin API (can also be set via the `DEVIN_API_KEY` environment variable)
-- `--port`: Port to run the UI on (default: 7860)
-- `--host`: Host to run the UI on (default: 0.0.0.0)
-- `--share`: Create a public URL using Gradio's sharing feature
-- `--debug`: Enable debug mode
+## Features
 
-## Interface
+The UI includes the following features:
 
-The UI is organized into tabs:
+- Session management
+- Chat interface
+- File upload
+- Tool execution
+- API monitoring
+- Performance monitoring
+- Event logging
 
-1. **Sessions**: Create and manage sessions
-2. **Chat**: Send messages, upload files, and view responses
-3. **Tools**: Execute tools and view tool details
-4. **Monitoring**: View API requests, performance metrics, and logs
+## Implementation
 
-## Integration with Enhanced Devin
+The UI is implemented using:
 
-The UI integrates with the Enhanced Devin system through the following components:
+- Gradio: For the web interface
+- MockDevinAPIClient: For testing without an actual API key
+- EnhancedDevinAPIClient: For interacting with the Enhanced Devin API
 
-- `EnhancedDevinAPIClient`: For API communication
-- `APIMonitor`: For monitoring API requests
-- `EventLogger`: For logging events
-- `ToolRegistry`: For managing tools
+## Testing
+
+The UI can be tested without an actual API key by using the built-in MockDevinAPIClient.
