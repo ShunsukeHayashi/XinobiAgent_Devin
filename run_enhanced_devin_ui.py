@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Run script for Enhanced Devin Gradio UI.
+Run script for Enhanced Devin Gradio UI with public URL.
 
 This script runs the Enhanced Devin Gradio UI with a public URL for easy sharing.
 """
@@ -21,13 +21,12 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def main():
-    """Run the Enhanced Devin UI."""
+    """Run the Enhanced Devin UI with public URL."""
     # Parse arguments
-    parser = argparse.ArgumentParser(description="Enhanced Devin UI")
+    parser = argparse.ArgumentParser(description="Enhanced Devin UI with Public URL")
     parser.add_argument("--api-key", help="API key for Devin API")
     parser.add_argument("--port", type=int, default=7860, help="Port to run the UI on")
     parser.add_argument("--host", default="0.0.0.0", help="Host to run the UI on")
-    parser.add_argument("--share", action="store_true", help="Create a public URL")
     parser.add_argument("--debug", action="store_true", help="Enable debug mode")
     args = parser.parse_args()
     
@@ -41,12 +40,12 @@ def main():
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
     
-    # Launch the UI
-    logger.info(f"Starting Enhanced Devin UI on port {args.port}")
+    # Launch the UI with public URL
+    logger.info(f"Starting Enhanced Devin UI on port {args.port} with public URL")
     ui.interface.launch(
         server_name=args.host,
         server_port=args.port,
-        share=args.share,
+        share=True,  # Always create a public URL
         debug=args.debug
     )
 
