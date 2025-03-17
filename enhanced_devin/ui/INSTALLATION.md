@@ -17,53 +17,50 @@ This guide explains how to install and set up the Enhanced Devin UI.
 
 2. **Install dependencies**:
    ```bash
-   pip install gradio matplotlib numpy psutil
+   pip install gradio aiohttp matplotlib numpy psutil
+   ```
+
+## Running the UI
+
+1. **Run the simplified UI**:
+   ```bash
+   python run_simple_gradio_ui.py
+   ```
+
+2. **Run with a public URL**:
+   ```bash
+   python run_simple_gradio_ui.py --share
+   ```
+
+3. **Run with debug mode**:
+   ```bash
+   python run_simple_gradio_ui.py --debug
+   ```
+
+4. **Run on a specific port**:
+   ```bash
+   python run_simple_gradio_ui.py --port 8080
    ```
 
 ## Configuration
 
-1. **Set up API key**:
-   - Option 1: Set the `DEVIN_API_KEY` environment variable:
-     ```bash
-     export DEVIN_API_KEY=your_api_key
-     ```
-   - Option 2: Pass the API key as a command-line argument:
-     ```bash
-     python run_enhanced_devin_ui.py --api-key your_api_key
-     ```
-
-## Running the UI
-
-1. **Run the UI with a public URL**:
-   ```bash
-   python run_enhanced_devin_ui.py
-   ```
-
-2. **Run the UI with debug mode**:
-   ```bash
-   python run_enhanced_devin_ui.py --debug
-   ```
-
-3. **Run the UI on a specific port**:
-   ```bash
-   python run_enhanced_devin_ui.py --port 8080
-   ```
+No additional configuration is required for the mock mode. The UI will automatically use the mock API client.
 
 ## Troubleshooting
 
 1. **Port already in use**:
    - Try using a different port:
      ```bash
-     python run_enhanced_devin_ui.py --port 8080
+     python run_simple_gradio_ui.py --port 8080
      ```
 
-2. **API key not working**:
-   - Make sure you have set the correct API key
-   - Check that the API key has the necessary permissions
-
-3. **UI not loading**:
+2. **UI not loading**:
    - Check that all dependencies are installed
    - Try running with debug mode to see more detailed error messages:
      ```bash
-     python run_enhanced_devin_ui.py --debug
+     python run_simple_gradio_ui.py --debug
      ```
+
+3. **Module not found errors**:
+   - Make sure you're running the script from the repository root directory
+   - Check that all dependencies are installed

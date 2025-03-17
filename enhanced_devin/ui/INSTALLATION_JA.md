@@ -17,53 +17,50 @@
 
 2. **依存関係のインストール**:
    ```bash
-   pip install gradio matplotlib numpy psutil
+   pip install gradio aiohttp matplotlib numpy psutil
+   ```
+
+## UIの実行
+
+1. **簡易UIの実行**:
+   ```bash
+   python run_simple_gradio_ui.py
+   ```
+
+2. **公開URLで実行**:
+   ```bash
+   python run_simple_gradio_ui.py --share
+   ```
+
+3. **デバッグモードで実行**:
+   ```bash
+   python run_simple_gradio_ui.py --debug
+   ```
+
+4. **特定のポートで実行**:
+   ```bash
+   python run_simple_gradio_ui.py --port 8080
    ```
 
 ## 設定
 
-1. **APIキーの設定**:
-   - オプション1：`DEVIN_API_KEY`環境変数を設定する：
-     ```bash
-     export DEVIN_API_KEY=your_api_key
-     ```
-   - オプション2：コマンドライン引数としてAPIキーを渡す：
-     ```bash
-     python run_enhanced_devin_ui.py --api-key your_api_key
-     ```
-
-## UIの実行
-
-1. **公開URLでUIを実行する**:
-   ```bash
-   python run_enhanced_devin_ui.py
-   ```
-
-2. **デバッグモードでUIを実行する**:
-   ```bash
-   python run_enhanced_devin_ui.py --debug
-   ```
-
-3. **特定のポートでUIを実行する**:
-   ```bash
-   python run_enhanced_devin_ui.py --port 8080
-   ```
+モックモードでは追加の設定は必要ありません。UIは自動的にモックAPIクライアントを使用します。
 
 ## トラブルシューティング
 
 1. **ポートが既に使用されている**:
    - 別のポートを試してみてください：
      ```bash
-     python run_enhanced_devin_ui.py --port 8080
+     python run_simple_gradio_ui.py --port 8080
      ```
 
-2. **APIキーが機能しない**:
-   - 正しいAPIキーを設定していることを確認してください
-   - APIキーに必要な権限があることを確認してください
-
-3. **UIが読み込まれない**:
+2. **UIが読み込まれない**:
    - すべての依存関係がインストールされていることを確認してください
    - デバッグモードで実行して、より詳細なエラーメッセージを確認してください：
      ```bash
-     python run_enhanced_devin_ui.py --debug
+     python run_simple_gradio_ui.py --debug
      ```
+
+3. **モジュールが見つからないエラー**:
+   - リポジトリのルートディレクトリからスクリプトを実行していることを確認してください
+   - すべての依存関係がインストールされていることを確認してください
