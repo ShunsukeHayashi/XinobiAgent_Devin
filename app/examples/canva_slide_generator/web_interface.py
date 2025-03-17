@@ -9,7 +9,7 @@ import asyncio
 import json
 import logging
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Optional, List
 
 import gradio as gr
 
@@ -23,6 +23,7 @@ async def generate_slides(
     prompt: str,
     num_slides: int,
     title: str,
+    template_type: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Generate slides from a prompt using the Canva API.
@@ -31,6 +32,7 @@ async def generate_slides(
         prompt: Text prompt describing the desired presentation
         num_slides: Number of slides to generate
         title: Title for the presentation
+        template_type: Optional template type to apply
         
     Returns:
         Dictionary containing the generated presentation details
@@ -48,6 +50,7 @@ async def generate_slides(
             num_slides=num_slides,
             title=title,
             api_key=api_key,
+            template_type=template_type,
         )
         
         return {
@@ -90,12 +93,25 @@ def create_web_interface():
                     value=5,
                     step=1,
                 )
+                template_input = gr.Dropdown(
+                    label="テンプレートタイプ",
+                    choices=[
+                        "自動選択",
+                        "タイムライン",
+                        "フロー図",
+                        "サイクル",
+                        "アイコン",
+                        "ボックス",
+                        "箇条書き",
+                    ],
+                    value="自動選択",
+                )
                 generate_button = gr.Button("スライド生成")
             
             with gr.Column():
                 output = gr.JSON(label="結果")
         
-        def handle_generate(prompt, title, num_slides):
+        def handle_generate(prompt, title, num_slides, template):
             """
             Handle the generate button click.
             """
@@ -105,13 +121,31 @@ def create_web_interface():
             if not title:
                 title = f"Presentation: {prompt[:30]}..."
             
+            # Map template names to types
+            template_map = {
+                "自動選択": None,
+                "タイムライン": "timeline",
+                "フロー図": "arrows",
+                "サイクル": "cycle",
+                "アイコン": "icons",
+                "ボックス": "boxes",
+                "箇条書き": "bullets",
+            }
+            
+            template_type = template_map.get(template)
+            
             # Run the async function in a new event loop
-            result = asyncio.run(generate_slides(prompt, int(num_slides), title))
+            result = asyncio.run(generate_slides(
+                prompt, 
+                int(num_slides), 
+                title,
+                template_type,
+            ))
             return result
         
         generate_button.click(
             fn=handle_generate,
-            inputs=[prompt_input, title_input, num_slides_input],
+            inputs=[prompt_input, title_input, num_slides_input, template_input],
             outputs=[output],
         )
     

@@ -52,6 +52,13 @@ async def run_canva_agent_example(prompt: str) -> None:
     
     The presentation should have a coherent structure with appropriate text and images.
     Use the Canva API to create the presentation.
+    Use appropriate templates for different types of content:
+    - タイムライン (Timeline) for chronological information
+    - フロー図 (Arrows) for process flows
+    - サイクル (Cycle) for cyclical processes
+    - アイコン (Icons) for feature highlights
+    - ボックス (Boxes) for grouped information
+    - 箇条書き (Bullets) for simple lists
     """
     
     # Run the agent with the goal

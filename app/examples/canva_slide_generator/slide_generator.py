@@ -59,6 +59,7 @@ async def generate_slides_from_prompt(
     num_slides: int = 5,
     title: Optional[str] = None,
     api_key: Optional[str] = None,
+    template_type: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Generate a presentation from a text prompt using the Canva API.
@@ -68,6 +69,7 @@ async def generate_slides_from_prompt(
         num_slides: Number of slides to generate
         title: Optional title for the presentation
         api_key: Optional Canva API key
+        template_type: Optional template type to apply
         
     Returns:
         Dictionary containing the generated presentation details
@@ -82,10 +84,20 @@ async def generate_slides_from_prompt(
     {prompt}
     
     The presentation should have a coherent structure with appropriate text and images.
+    Use appropriate templates for different types of content:
+    - タイムライン (Timeline) for chronological information
+    - フロー図 (Arrows) for process flows
+    - サイクル (Cycle) for cyclical processes
+    - アイコン (Icons) for feature highlights
+    - ボックス (Boxes) for grouped information
+    - 箇条書き (Bullets) for simple lists
     """
     
     if title:
         goal += f"\nThe presentation should be titled: {title}"
+    
+    if template_type:
+        goal += f"\nUse the {template_type} template for all slides."
     
     # Run the agent with the goal
     result = await agent.run(goal)
@@ -98,6 +110,7 @@ async def generate_slides_from_prompt(
         "prompt": prompt,
         "num_slides": num_slides,
         "title": title,
+        "template_type": template_type,
     }
 
 async def main():
