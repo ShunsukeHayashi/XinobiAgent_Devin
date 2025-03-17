@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devin API Monitor Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .response {
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        .monitor-section {
+            margin-top: 30px;
+        }
+        .monitor-output {
+            height: 300px;
+            overflow-y: auto;
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Devin API Monitor Test</h1>
+    
+    <div class="card">
+        <h2>Load Monitoring Scripts</h2>
+        <div>
+            <button onclick="loadApiMonitor()">Load API Monitor</button>
+            <button onclick="loadAuthMonitor()">Load Auth Monitor</button>
+            <button onclick="loadSessionMonitor()">Load Session Monitor</button>
+            <button onclick="loadCombinedMonitor()">Load Combined Monitor</button>
+        </div>
+        <div class="response" id="loadResponse"></div>
+    </div>
+    
+    <div class="card">
+        <h2>Run Test Scenarios</h2>
+        <div>
+            <button onclick="runTestScenario('testCompleteWorkflow')">Complete Workflow</button>
+            <button onclick="runTestScenario('testAuthenticationFlow')">Authentication Flow</button>
+            <button onclick="runTestScenario('testSessionManagement')">Session Management</button>
+            <button onclick="runTestScenario('testMessageExchange')">Message Exchange</button>
+        </div>
+        <div class="response" id="testResponse"></div>
+    </div>
+    
+    <div class="monitor-section">
+        <h2>Monitor Output</h2>
+        <div>
+            <button onclick="showApiRequests()">Show API Requests</button>
+            <button onclick="showSessions()">Show Sessions</button>
+            <button onclick="showAuthEvents()">Show Auth Events</button>
+            <button onclick="analyzeRequests()">Analyze Requests</button>
+            <button onclick="exportData()">Export Data</button>
+            <button onclick="clearOutput()">Clear Output</button>
+        </div>
+        <div class="monitor-output" id="monitorOutput"></div>
+    </div>
+    
+    <!-- Load test scenarios -->
+    <script src="test_scenarios.js"></script>
+    
+    <script>
+        // API configuration
+        const API_BASE_URL = 'http://localhost:8000/v1';
+        
+        // Load monitoring scripts
+        function loadScript(url, callback) {
+            const script = document.createElement('script');
+            script.src = url;
+            script.onload = callback;
+            script.onerror = (error) => {
+                document.getElementById('loadResponse').textContent += `Failed to load script: ${url}\n`;
+                console.error('Script load error:', error);
+            };
+            document.head.appendChild(script);
+        }
+        
+        function loadApiMonitor() {
+            document.getElementById('loadResponse').textContent = 'Loading API Monitor...\n';
+            loadScript('scripts/api_monitor.js', () => {
+                document.getElementById('loadResponse').textContent += 'API Monitor loaded successfully\n';
+            });
+        }
+        
+        function loadAuthMonitor() {
+            document.getElementById('loadResponse').textContent = 'Loading Auth Monitor...\n';
+            loadScript('scripts/auth_monitor.js', () => {
+                document.getElementById('loadResponse').textContent += 'Auth Monitor loaded successfully\n';
+            });
+        }
+        
+        function loadSessionMonitor() {
+            document.getElementById('loadResponse').textContent = 'Loading Session Monitor...\n';
+            loadScript('scripts/session_monitor.js', () => {
+                document.getElementById('loadResponse').textContent += 'Session Monitor loaded successfully\n';
+            });
+        }
+        
+        function loadCombinedMonitor() {
+            document.getElementById('loadResponse').textContent = 'Loading Combined Monitor...\n';
+            loadScript('scripts/combined_monitor.js', () => {
+                document.getElementById('loadResponse').textContent += 'Combined Monitor loaded successfully\n';
+            });
+        }
+        
+        // Run test scenarios
+        async function runTestScenario(scenarioName) {
+            document.getElementById('testResponse').textContent = `Running ${scenarioName}...\n`;
+            
+            try {
+                if (!window.devinApiTests || !window.devinApiTests[scenarioName]) {
+                    document.getElementById('testResponse').textContent += 'Test scenario not found. Make sure test_scenarios.js is loaded.\n';
+                    return;
+                }
+                
+                const result = await window.devinApiTests[scenarioName]();
+                document.getElementById('testResponse').textContent += `${scenarioName} completed successfully\n`;
+                document.getElementById('testResponse').textContent += `Result: ${JSON.stringify(result, null, 2)}\n`;
+            } catch (error) {
+                document.getElementById('testResponse').textContent += `Error running ${scenarioName}: ${error.message}\n`;
+            }
+        }
+        
+        // Monitor output functions
+        function showApiRequests() {
+            try {
+                if (window.devinApi) {
+                    const requests = window.devinApi.getRequests();
+                    document.getElementById('monitorOutput').textContent = JSON.stringify(requests, null, 2);
+                } else if (window.devin) {
+                    const requests = window.devin.getRequests();
+                    document.getElementById('monitorOutput').textContent = JSON.stringify(requests, null, 2);
+                } else {
+                    document.getElementById('monitorOutput').textContent = 'API Monitor not loaded';
+                }
+            } catch (error) {
+                document.getElementById('monitorOutput').textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        function showSessions() {
+            try {
+                if (window.devinSession) {
+                    const sessions = window.devinSession.getSessions();
+                    document.getElementById('monitorOutput').textContent = JSON.stringify(sessions, null, 2);
+                } else if (window.devin) {
+                    const sessions = window.devin.getSessions();
+                    document.getElementById('monitorOutput').textContent = JSON.stringify(sessions, null, 2);
+                } else {
+                    document.getElementById('monitorOutput').textContent = 'Session Monitor not loaded';
+                }
+            } catch (error) {
+                document.getElementById('monitorOutput').textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        function showAuthEvents() {
+            try {
+                if (window.devinAuth) {
+                    const events = window.devinAuth.getEvents();
+                    document.getElementById('monitorOutput').textContent = JSON.stringify(events, null, 2);
+                } else if (window.devin) {
+                    const events = window.devin.getAuthEvents();
+                    document.getElementById('monitorOutput').textContent = JSON.stringify(events, null, 2);
+                } else {
+                    document.getElementById('monitorOutput').textContent = 'Auth Monitor not loaded';
+                }
+            } catch (error) {
+                document.getElementById('monitorOutput').textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        function analyzeRequests() {
+            try {
+                if (window.devinApi) {
+                    const analysis = window.devinApi.summarize();
+                    document.getElementById('monitorOutput').textContent = JSON.stringify(analysis, null, 2);
+                } else if (window.devin) {
+                    const analysis = window.devin.summarize();
+                    document.getElementById('monitorOutput').textContent = JSON.stringify(analysis, null, 2);
+                } else {
+                    document.getElementById('monitorOutput').textContent = 'API Monitor not loaded';
+                }
+            } catch (error) {
+                document.getElementById('monitorOutput').textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        function exportData() {
+            try {
+                if (window.devin) {
+                    const data = window.devin.export();
+                    document.getElementById('monitorOutput').textContent = JSON.stringify(data, null, 2);
+                } else if (window.devinApi) {
+                    const data = window.devinApi.export();
+                    document.getElementById('monitorOutput').textContent = JSON.stringify(data, null, 2);
+                } else {
+                    document.getElementById('monitorOutput').textContent = 'Monitor not loaded';
+                }
+            } catch (error) {
+                document.getElementById('monitorOutput').textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        function clearOutput() {
+            document.getElementById('monitorOutput').textContent = '';
+        }
+    </script>
+</body>
+</html>
