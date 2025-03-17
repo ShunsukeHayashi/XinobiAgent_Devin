@@ -74,6 +74,12 @@ python run_simple_gradio_ui.py --share
 - **UI/README_USAGE_JA.md**: Gradio UIの使用ガイド（日本語）
 - **UI/INSTALLATION.md**: Gradio UIのインストールガイド（英語）
 - **UI/INSTALLATION_JA.md**: Gradio UIのインストールガイド（日本語）
+- **UI/VERIFICATION.md**: Gradio UIの検証レポート（英語）
+- **UI/VERIFICATION_JA.md**: Gradio UIの検証レポート（日本語）
+- **UI/SCREENSHOTS.md**: Gradio UIのスクリーンショットガイド（英語）
+- **UI/SCREENSHOTS_JA.md**: Gradio UIのスクリーンショットガイド（日本語）
+- **UI/TROUBLESHOOTING.md**: Gradio UIのトラブルシューティングガイド（英語）
+- **UI/TROUBLESHOOTING_JA.md**: Gradio UIのトラブルシューティングガイド（日本語）
 
 ## 結論
 
