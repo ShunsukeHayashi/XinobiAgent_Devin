@@ -4,63 +4,116 @@ This guide explains how to install and set up the Enhanced Devin UI.
 
 ## Prerequisites
 
+Before installing the Enhanced Devin UI, you need to have the following:
+
 - Python 3.8 or higher
-- pip (Python package manager)
+- pip (Python package installer)
+- Git (for cloning the repository)
 
-## Installation
+## Installation Steps
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/ShunsukeHayashi/XinobiAgent_Devin.git
-   cd XinobiAgent_Devin
-   ```
+### 1. Clone the Repository
 
-2. **Install dependencies**:
-   ```bash
-   pip install gradio aiohttp matplotlib numpy psutil
-   ```
+```bash
+git clone https://github.com/ShunsukeHayashi/XinobiAgent_Devin.git
+cd XinobiAgent_Devin
+```
+
+### 2. Install Dependencies
+
+```bash
+pip install gradio==5.21.0 aiohttp matplotlib numpy psutil
+```
+
+### 3. Set Up the Environment
+
+```bash
+# Optional: Create a virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+### 4. Configure the API Key (Optional)
+
+You can set the API key in the UI or as an environment variable:
+
+```bash
+export DEVIN_API_KEY=your_api_key_here
+```
+
+On Windows:
+
+```bash
+set DEVIN_API_KEY=your_api_key_here
+```
 
 ## Running the UI
 
-1. **Run the simplified UI**:
-   ```bash
-   python run_simple_gradio_ui.py
-   ```
+To run the UI, use the following command:
 
-2. **Run with a public URL**:
-   ```bash
-   python run_simple_gradio_ui.py --share
-   ```
+```bash
+python run_simple_gradio_ui.py
+```
 
-3. **Run with debug mode**:
+To create a public URL that can be accessed from anywhere:
+
+```bash
+python run_simple_gradio_ui.py --share
+```
+
+## Command Line Options
+
+The UI supports the following command line options:
+
+- `--api-key`: API key for Devin API (can also be set via the `DEVIN_API_KEY` environment variable)
+- `--port`: Port to run the UI on (default: 7860)
+- `--host`: Host to run the UI on (default: 0.0.0.0)
+- `--share`: Create a public URL using Gradio's sharing feature
+- `--debug`: Enable debug mode
+
+## Verifying the Installation
+
+To verify that the installation was successful:
+
+1. Run the UI with the `--debug` option:
    ```bash
    python run_simple_gradio_ui.py --debug
    ```
-
-4. **Run on a specific port**:
-   ```bash
-   python run_simple_gradio_ui.py --port 8080
-   ```
-
-## Configuration
-
-No additional configuration is required for the mock mode. The UI will automatically use the mock API client.
+2. Open a web browser and navigate to `http://localhost:7860`
+3. You should see the Enhanced Devin UI
 
 ## Troubleshooting
 
-1. **Port already in use**:
-   - Try using a different port:
-     ```bash
-     python run_simple_gradio_ui.py --port 8080
-     ```
+### Issue: Missing Dependencies
 
-2. **UI not loading**:
-   - Check that all dependencies are installed
-   - Try running with debug mode to see more detailed error messages:
-     ```bash
-     python run_simple_gradio_ui.py --debug
-     ```
+If you encounter errors about missing dependencies, try installing them manually:
 
-3. **Module not found errors**:
-   - Make sure you're running the script from the repository root directory
-   - Check that all dependencies are installed
+```bash
+pip install gradio==5.21.0
+pip install aiohttp
+pip install matplotlib
+pip install numpy
+pip install psutil
+```
+
+### Issue: Port Already in Use
+
+If the port is already in use, try using a different port:
+
+```bash
+python run_simple_gradio_ui.py --port 8080
+```
+
+### Issue: Permission Denied
+
+If you encounter permission issues, try running the command with sudo (on Linux/Mac):
+
+```bash
+sudo python run_simple_gradio_ui.py
+```
+
+Or run the command prompt as administrator (on Windows).
+
+## Conclusion
+
+You have successfully installed the Enhanced Devin UI. You can now use it to interact with the Enhanced Devin system.
