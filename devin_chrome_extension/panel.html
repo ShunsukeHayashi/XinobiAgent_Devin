@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Devin API Monitor</title>
+  <link rel="stylesheet" href="css/panel.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Devin API Monitor</h1>
+      <div class="actions">
+        <button id="clearBtn">Clear</button>
+        <button id="exportBtn">Export</button>
+      </div>
+    </header>
+    
+    <div class="content">
+      <div class="sidebar">
+        <div class="filter-section">
+          <h2>Filters</h2>
+          <div class="filter-group">
+            <label><input type="checkbox" class="filter-endpoint" value="sessions" checked> Sessions</label>
+            <label><input type="checkbox" class="filter-endpoint" value="session" checked> Session Details</label>
+            <label><input type="checkbox" class="filter-endpoint" value="message" checked> Messages</label>
+            <label><input type="checkbox" class="filter-endpoint" value="secrets" checked> Secrets</label>
+            <label><input type="checkbox" class="filter-endpoint" value="attachment" checked> Attachments</label>
+          </div>
+          <div class="filter-group">
+            <label><input type="checkbox" class="filter-method" value="GET" checked> GET</label>
+            <label><input type="checkbox" class="filter-method" value="POST" checked> POST</label>
+            <label><input type="checkbox" class="filter-method" value="DELETE" checked> DELETE</label>
+          </div>
+        </div>
+        
+        <div class="request-list">
+          <h2>Requests</h2>
+          <div id="requestList" class="list"></div>
+        </div>
+      </div>
+      
+      <div class="main-content">
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="request">Request</button>
+          <button class="tab-btn" data-tab="response">Response</button>
+          <button class="tab-btn" data-tab="headers">Headers</button>
+          <button class="tab-btn" data-tab="analysis">Analysis</button>
+        </div>
+        
+        <div class="tab-content">
+          <div id="requestTab" class="tab-pane active">
+            <h3>Request Details</h3>
+            <div class="request-url"></div>
+            <div class="request-method"></div>
+            <div class="request-timestamp"></div>
+            <pre class="request-body"></pre>
+          </div>
+          
+          <div id="responseTab" class="tab-pane">
+            <h3>Response Details</h3>
+            <div class="response-status"></div>
+            <div class="response-timestamp"></div>
+            <pre class="response-body"></pre>
+          </div>
+          
+          <div id="headersTab" class="tab-pane">
+            <h3>Headers</h3>
+            <div class="headers-section">
+              <h4>Request Headers</h4>
+              <pre class="request-headers"></pre>
+            </div>
+            <div class="headers-section">
+              <h4>Response Headers</h4>
+              <pre class="response-headers"></pre>
+            </div>
+          </div>
+          
+          <div id="analysisTab" class="tab-pane">
+            <h3>API Analysis</h3>
+            <div class="analysis-content">
+              <div class="endpoint-info"></div>
+              <div class="session-info"></div>
+              <div class="timing-info"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="js/panel.js"></script>
+</body>
+</html>
