@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devin API Monitor Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #fff;
+        }
+        h2 {
+            margin-top: 0;
+            color: #444;
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .response {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Devin API Monitor Test</h1>
+
+    <div class="card">
+        <h2>Load Monitoring Scripts</h2>
+        <div>
+            <button onclick="loadApiMonitor()">Load API Monitor</button>
+            <button onclick="loadAuthMonitor()">Load Auth Monitor</button>
+            <button onclick="loadSessionMonitor()">Load Session Monitor</button>
+            <button onclick="loadCombinedMonitor()">Load Combined Monitor</button>
+        </div>
+        <div class="response" id="scriptResponse"></div>
+    </div>
+
+    <div class="card">
+        <h2>Run Test Scenarios</h2>
+        <div>
+            <button onclick="runCompleteWorkflow()">Complete Workflow</button>
+            <button onclick="runAuthFlow()">Authentication Flow</button>
+            <button onclick="runSessionManagement()">Session Management</button>
+            <button onclick="runMessageExchange()">Message Exchange</button>
+        </div>
+        <div class="response" id="testResponse"></div>
+    </div>
+
+    <div class="card">
+        <h2>Monitoring Results</h2>
+        <div>
+            <button onclick="showApiRequests()">Show API Requests</button>
+            <button onclick="showAuthEvents()">Show Auth Events</button>
+            <button onclick="showSessions()">Show Sessions</button>
+            <button onclick="generateSummary()">Generate Summary</button>
+            <button onclick="exportData()">Export Data</button>
+        </div>
+        <div class="response" id="monitoringResponse"></div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE_URL = 'http://localhost:8000/v1';
+        
+        // Script loading functions
+        function loadApiMonitor() {
+            const scriptResponse = document.getElementById('scriptResponse');
+            scriptResponse.textContent = 'Loading API Monitor...';
+            
+            const script = document.createElement('script');
+            script.src = 'scripts/api_monitor.js';
+            script.onload = function() {
+                scriptResponse.textContent += '\nAPI Monitor loaded successfully';
+                
+                // Configure API Monitor for testing
+                if (typeof devinApi !== 'undefined') {
+                    devinApi.config.apiDomain = 'localhost:8000';
+                    devinApi.config.logLevel = 'info';
+                }
+            };
+            script.onerror = function() {
+                scriptResponse.textContent += '\nFailed to load API Monitor';
+            };
+            document.head.appendChild(script);
+        }
+        
+        function loadAuthMonitor() {
+            const scriptResponse = document.getElementById('scriptResponse');
+            scriptResponse.textContent = 'Loading Auth Monitor...';
+            
+            const script = document.createElement('script');
+            script.src = 'scripts/auth_monitor.js';
+            script.onload = function() {
+                scriptResponse.textContent += '\nAuth Monitor loaded successfully';
+                
+                // Configure Auth Monitor for testing
+                if (typeof devinAuth !== 'undefined') {
+                    devinAuth.config.logLevel = 'info';
+                }
+            };
+            script.onerror = function() {
+                scriptResponse.textContent += '\nFailed to load Auth Monitor';
+            };
+            document.head.appendChild(script);
+        }
+        
+        function loadSessionMonitor() {
+            const scriptResponse = document.getElementById('scriptResponse');
+            scriptResponse.textContent = 'Loading Session Monitor...';
+            
+            const script = document.createElement('script');
+            script.src = 'scripts/session_monitor.js';
+            script.onload = function() {
+                scriptResponse.textContent += '\nSession Monitor loaded successfully';
+                
+                // Configure Session Monitor for testing
+                if (typeof devinSession !== 'undefined') {
+                    devinSession.config.apiDomain = 'localhost:8000';
+                    devinSession.config.logLevel = 'info';
+                }
+            };
+            script.onerror = function() {
+                scriptResponse.textContent += '\nFailed to load Session Monitor';
+            };
+            document.head.appendChild(script);
+        }
+        
+        function loadCombinedMonitor() {
+            const scriptResponse = document.getElementById('scriptResponse');
+            scriptResponse.textContent = 'Loading Combined Monitor...';
+            
+            const script = document.createElement('script');
+            script.src = 'scripts/combined_monitor.js';
+            script.onload = function() {
+                scriptResponse.textContent += '\nCombined Monitor loaded successfully';
+                
+                // Configure Combined Monitor for testing
+                if (typeof devin !== 'undefined') {
+                    devin.config.apiDomain = 'localhost:8000';
+                    devin.config.logLevel = 'info';
+                }
+            };
+            script.onerror = function() {
+                scriptResponse.textContent += '\nFailed to load Combined Monitor';
+            };
+            document.head.appendChild(script);
+        }
+        
+        // Test scenario functions
+        async function runCompleteWorkflow() {
+            const testResponse = document.getElementById('testResponse');
+            testResponse.textContent = 'Running complete workflow test...';
+            
+            try {
+                // 1. Get token from environment or use a placeholder for testing
+                const tokenResponse = await fetch(`${API_BASE_URL}/auth/token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!tokenResponse.ok) {
+                    throw new Error(`Authentication failed: ${tokenResponse.status}`);
+                }
+                
+                const tokenData = await tokenResponse.json();
+                // Use token from response, but don't store it in localStorage for security
+                const token = tokenData.token;
+                
+                // 2. Create session
+                const sessionResponse = await fetch(`${API_BASE_URL}/sessions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        prompt: 'Create a React app with authentication'
+                    })
+                });
+                
+                if (!sessionResponse.ok) {
+                    throw new Error(`Session creation failed: ${sessionResponse.status}`);
+                }
+                
+                const sessionData = await sessionResponse.json();
+                const sessionId = sessionData.session_id;
+                
+                // 3. Send message to session
+                const messageResponse = await fetch(`${API_BASE_URL}/session/${sessionId}/message`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        message: 'Add a login page with JWT authentication'
+                    })
+                });
+                
+                if (!messageResponse.ok) {
+                    throw new Error(`Message sending failed: ${messageResponse.status}`);
+                }
+                
+                // 4. Get session details
+                const sessionDetailsResponse = await fetch(`${API_BASE_URL}/session/${sessionId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!sessionDetailsResponse.ok) {
+                    throw new Error(`Getting session details failed: ${sessionDetailsResponse.status}`);
+                }
+                
+                const sessionDetails = await sessionDetailsResponse.json();
+                
+                // Display results
+                testResponse.textContent = 'Complete workflow test completed successfully';
+                testResponse.textContent += '\nResult: ' + JSON.stringify({
+                    sessionId: sessionId,
+                    sessionDetails: sessionDetails
+                }, null, 2);
+                
+            } catch (error) {
+                testResponse.textContent += '\nError: ' + error.message;
+            }
+        }
+        
+        async function runAuthFlow() {
+            const testResponse = document.getElementById('testResponse');
+            testResponse.textContent = 'Running authentication flow test...';
+            
+            try {
+                // Get token from environment or use a placeholder for testing
+                const tokenResponse = await fetch(`${API_BASE_URL}/auth/token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!tokenResponse.ok) {
+                    throw new Error(`Authentication failed: ${tokenResponse.status}`);
+                }
+                
+                const tokenData = await tokenResponse.json();
+                // For testing purposes, we'll use a placeholder value
+                const token = "TEST_TOKEN_PLACEHOLDER";
+                
+                // Display results
+                testResponse.textContent = 'Authentication flow test completed successfully';
+                testResponse.textContent += '\nResult: ' + JSON.stringify({
+                    storedToken: "undefined"
+                }, null, 2);
+                
+            } catch (error) {
+                testResponse.textContent += '\nError: ' + error.message;
+            }
+        }
+        
+        async function runSessionManagement() {
+            const testResponse = document.getElementById('testResponse');
+            testResponse.textContent = 'Running session management test...';
+            
+            try {
+                // Get token from environment or use a placeholder for testing
+                const tokenResponse = await fetch(`${API_BASE_URL}/auth/token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!tokenResponse.ok) {
+                    throw new Error(`Authentication failed: ${tokenResponse.status}`);
+                }
+                
+                const tokenData = await tokenResponse.json();
+                const token = tokenData.token;
+                
+                // Create multiple sessions
+                const sessions = [];
+                
+                for (let i = 0; i < 3; i++) {
+                    const sessionResponse = await fetch(`${API_BASE_URL}/sessions`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            prompt: `Test session ${i + 1}`
+                        })
+                    });
+                    
+                    if (!sessionResponse.ok) {
+                        throw new Error(`Session creation failed: ${sessionResponse.status}`);
+                    }
+                    
+                    const sessionData = await sessionResponse.json();
+                    sessions.push(sessionData);
+                }
+                
+                // Get details for each session
+                const sessionDetails = [];
+                
+                for (const session of sessions) {
+                    const sessionDetailsResponse = await fetch(`${API_BASE_URL}/session/${session.session_id}`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    
+                    if (!sessionDetailsResponse.ok) {
+                        throw new Error(`Getting session details failed: ${sessionDetailsResponse.status}`);
+                    }
+                    
+                    const details = await sessionDetailsResponse.json();
+                    sessionDetails.push(details);
+                }
+                
+                // Display results
+                testResponse.textContent = 'Session management test completed successfully';
+                testResponse.textContent += '\nResult: ' + JSON.stringify({
+                    sessions: sessions,
+                    sessionDetails: sessionDetails
+                }, null, 2);
+                
+            } catch (error) {
+                testResponse.textContent += '\nError: ' + error.message;
+            }
+        }
+        
+        async function runMessageExchange() {
+            const testResponse = document.getElementById('testResponse');
+            testResponse.textContent = 'Running message exchange test...';
+            
+            try {
+                // Get token from environment or use a placeholder for testing
+                const tokenResponse = await fetch(`${API_BASE_URL}/auth/token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!tokenResponse.ok) {
+                    throw new Error(`Authentication failed: ${tokenResponse.status}`);
+                }
+                
+                const tokenData = await tokenResponse.json();
+                const token = tokenData.token;
+                
+                // Create session
+                const sessionResponse = await fetch(`${API_BASE_URL}/sessions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        prompt: 'Message exchange test'
+                    })
+                });
+                
+                if (!sessionResponse.ok) {
+                    throw new Error(`Session creation failed: ${sessionResponse.status}`);
+                }
+                
+                const sessionData = await sessionResponse.json();
+                const sessionId = sessionData.session_id;
+                
+                // Send multiple messages
+                const messages = [
+                    'First test message',
+                    'Second test message',
+                    'Third test message'
+                ];
+                
+                const messageResponses = [];
+                
+                for (const message of messages) {
+                    const messageResponse = await fetch(`${API_BASE_URL}/session/${sessionId}/message`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            message: message
+                        })
+                    });
+                    
+                    if (!messageResponse.ok) {
+                        throw new Error(`Message sending failed: ${messageResponse.status}`);
+                    }
+                    
+                    messageResponses.push(await messageResponse.json());
+                }
+                
+                // Get session details with messages
+                const sessionDetailsResponse = await fetch(`${API_BASE_URL}/session/${sessionId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!sessionDetailsResponse.ok) {
+                    throw new Error(`Getting session details failed: ${sessionDetailsResponse.status}`);
+                }
+                
+                const sessionDetails = await sessionDetailsResponse.json();
+                
+                // Display results
+                testResponse.textContent = 'Message exchange test completed successfully';
+                testResponse.textContent += '\nResult: ' + JSON.stringify({
+                    sessionId: sessionId,
+                    messages: messages,
+                    sessionDetails: sessionDetails
+                }, null, 2);
+                
+            } catch (error) {
+                testResponse.textContent += '\nError: ' + error.message;
+            }
+        }
+        
+        // Monitoring results functions
+        function showApiRequests() {
+            const monitoringResponse = document.getElementById('monitoringResponse');
+            
+            if (typeof devinApi === 'undefined') {
+                monitoringResponse.textContent = 'API Monitor not loaded';
+                return;
+            }
+            
+            const requests = devinApi.getRequests();
+            monitoringResponse.textContent = 'API Requests:\n' + JSON.stringify(requests, null, 2);
+        }
+        
+        function showAuthEvents() {
+            const monitoringResponse = document.getElementById('monitoringResponse');
+            
+            if (typeof devinAuth === 'undefined') {
+                monitoringResponse.textContent = 'Auth Monitor not loaded';
+                return;
+            }
+            
+            const events = devinAuth.getEvents();
+            monitoringResponse.textContent = 'Auth Events:\n' + JSON.stringify(events, null, 2);
+        }
+        
+        function showSessions() {
+            const monitoringResponse = document.getElementById('monitoringResponse');
+            
+            if (typeof devinSession === 'undefined') {
+                monitoringResponse.textContent = 'Session Monitor not loaded';
+                return;
+            }
+            
+            const sessions = devinSession.getSessions();
+            monitoringResponse.textContent = 'Sessions:\n' + JSON.stringify(sessions, null, 2);
+        }
+        
+        function generateSummary() {
+            const monitoringResponse = document.getElementById('monitoringResponse');
+            let summary = 'Monitoring Summary:\n\n';
+            
+            if (typeof devinApi !== 'undefined') {
+                const apiSummary = devinApi.summarize();
+                summary += 'API Monitor:\n' + JSON.stringify(apiSummary, null, 2) + '\n\n';
+            } else {
+                summary += 'API Monitor not loaded\n\n';
+            }
+            
+            if (typeof devinAuth !== 'undefined') {
+                const authSummary = devinAuth.summarize();
+                summary += 'Auth Monitor:\n' + JSON.stringify(authSummary, null, 2) + '\n\n';
+            } else {
+                summary += 'Auth Monitor not loaded\n\n';
+            }
+            
+            if (typeof devinSession !== 'undefined') {
+                const sessionSummary = devinSession.summarize();
+                summary += 'Session Monitor:\n' + JSON.stringify(sessionSummary, null, 2) + '\n\n';
+            } else {
+                summary += 'Session Monitor not loaded\n\n';
+            }
+            
+            if (typeof devin !== 'undefined') {
+                const combinedSummary = devin.summarize();
+                summary += 'Combined Monitor:\n' + JSON.stringify(combinedSummary, null, 2);
+            } else {
+                summary += 'Combined Monitor not loaded';
+            }
+            
+            monitoringResponse.textContent = summary;
+        }
+        
+        function exportData() {
+            const monitoringResponse = document.getElementById('monitoringResponse');
+            let exportData = {};
+            
+            if (typeof devinApi !== 'undefined') {
+                exportData.api = devinApi.export();
+            }
+            
+            if (typeof devinAuth !== 'undefined') {
+                exportData.auth = devinAuth.export();
+            }
+            
+            if (typeof devinSession !== 'undefined') {
+                exportData.session = devinSession.export();
+            }
+            
+            if (typeof devin !== 'undefined') {
+                exportData.combined = devin.export();
+            }
+            
+            // Create download link
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', `devin-monitor-export-${Date.now()}.json`);
+            a.click();
+            
+            monitoringResponse.textContent = 'Data exported successfully';
+        }
+    </script>
+</body>
+</html>
