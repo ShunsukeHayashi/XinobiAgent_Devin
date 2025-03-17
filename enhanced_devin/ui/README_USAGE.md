@@ -1,118 +1,98 @@
-# Enhanced Devin Gradio UI Usage Guide
+# Enhanced Devin UI Usage Guide
 
-This guide explains how to use the Enhanced Devin Gradio UI.
+This guide explains how to use the Enhanced Devin UI.
 
-## Installation
+## Overview
 
-Before running the UI, install the required dependencies:
+The Enhanced Devin UI provides a web-based interface for interacting with the Enhanced Devin system. It allows you to:
 
-```bash
-pip install gradio matplotlib numpy psutil
-```
+- Create and manage sessions
+- Send messages and upload files
+- Execute tools
+- Monitor API requests, performance metrics, and logs
 
-## Running the UI
-
-You can run the UI using one of the provided scripts:
-
-```bash
-# From the project root directory
-python enhanced_devin/ui/run_ui.py --share
-```
-
-Or using the launcher:
-
-```bash
-python enhanced_devin/ui/launcher.py --share
-```
-
-Command line options:
-
-- `--api-key`: API key for Devin API (can also be set via the `DEVIN_API_KEY` environment variable)
-- `--port`: Port to run the UI on (default: 7860)
-- `--host`: Host to run the UI on (default: 0.0.0.0)
-- `--share`: Create a public URL using Gradio's sharing feature
-- `--debug`: Enable debug mode
-
-## Using the UI
+## Interface
 
 The UI is organized into tabs:
 
+1. **Sessions**: Create and manage sessions
+2. **Chat**: Send messages, upload files, and view responses
+3. **Tools**: Execute tools and view tool details
+4. **Monitoring**: View API requests, performance metrics, and logs
+
+## Usage
+
 ### Sessions Tab
 
-- Create new sessions with custom names
-- Load existing sessions
-- View session information
+1. **Create a Session**:
+   - Enter a name for the session in the "Session Name" field
+   - Click "Create Session"
+
+2. **Load a Session**:
+   - Select a session from the "Active Sessions" dropdown
+   - Click "Load Session"
+
+3. **View Session Information**:
+   - Session details are displayed in the "Session Information" section
 
 ### Chat Tab
 
-- Send messages to the agent
-- Upload files
-- View agent responses
-- Monitor agent actions and state
+1. **Send a Message**:
+   - Type your message in the "Message" field
+   - Click "Send Message"
+
+2. **Upload a File**:
+   - Click "Upload File"
+   - Select a file from your computer
+   - Click "Send Message"
+
+3. **View Agent Actions**:
+   - Agent actions are displayed in the "Agent Actions" section
+
+4. **View Agent State**:
+   - The current state of the agent is displayed in the "Agent State" section
 
 ### Tools Tab
 
-- View available tools
-- Select tools to view details
-- Execute tools with custom parameters
-- View tool execution results
+1. **View Available Tools**:
+   - Available tools are displayed in the "Available Tools" section
+
+2. **Execute a Tool**:
+   - Enter the tool name in the "Tool Name" field
+   - Enter the parameters in the "Parameters (JSON)" field
+   - Click "Execute Tool"
+
+3. **View Tool Details**:
+   - Select a tool from the "Available Tools" section
+   - Tool details are displayed in the "Tool Details" section
 
 ### Monitoring Tab
 
-#### API Monitoring
+1. **View API Requests**:
+   - API requests are displayed in the "API Monitoring" tab
 
-- View API requests
-- Check request details
+2. **View Performance Metrics**:
+   - Performance metrics are displayed in the "Performance" tab
 
-#### Performance
+3. **View Logs**:
+   - Logs are displayed in the "Logs" tab
 
-- View system metrics
-- Check performance charts
+## Examples
 
-#### Logs
+### Example 1: Creating a Session and Sending a Message
 
-- View log entries
-- Filter logs by level and source
-- View log details
+1. Go to the "Sessions" tab
+2. Enter "My Session" in the "Session Name" field
+3. Click "Create Session"
+4. Go to the "Chat" tab
+5. Enter "Hello, Enhanced Devin!" in the "Message" field
+6. Click "Send Message"
+7. View the response in the chat history
 
-## API Key
+### Example 2: Executing a Tool
 
-You can set the Devin API key in one of the following ways:
-
-1. Via the UI: Enter the API key in the text box at the top of the UI
-2. Via environment variable: Set the `DEVIN_API_KEY` environment variable
-3. Via command line: Use the `--api-key` option when running the UI
-
-## Usage Examples
-
-### Creating a Session and Sending a Message
-
-1. Go to the Sessions tab
-2. Enter a name for the session and click "Create Session"
-3. Go to the Chat tab
-4. Enter a message and click "Send Message"
-5. View the agent's response in the chat history
-
-### Executing a Tool
-
-1. Go to the Tools tab
-2. Click "Refresh Tools" to view available tools
-3. Select a tool from the list to view its details
-4. Enter the tool name and parameters
-5. Click "Execute Tool" to run the tool
-6. View the execution result
-
-### Monitoring API Requests
-
-1. Go to the Monitoring tab
-2. Select the API Monitoring sub-tab
-3. Click "Refresh" to view recent API requests
-4. Select a request to view its details
-
-## Troubleshooting
-
-If you encounter issues:
-
-- Check the logs in the Monitoring tab
-- Enable debug mode with the `--debug` flag
-- Check the console output for error messages
+1. Go to the "Tools" tab
+2. Enter "BashTool" in the "Tool Name" field
+3. Enter `{"command": "ls -la"}` in the "Parameters (JSON)" field
+4. Click "Execute Tool"
+5. View the result in the "Execution Result" section
