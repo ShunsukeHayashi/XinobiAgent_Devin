@@ -1,48 +1,90 @@
 # Heroku Deploy Button Setup
 
-The "Deploy to Heroku" button in the README.md allows users to deploy the application to Heroku with a single click. This document explains how it works and how to customize it.
+This document explains how the "Deploy to Heroku" button is set up for the note.com integration system.
 
-## How It Works
+## How the Deploy Button Works
 
-The Deploy to Heroku button uses the `app.json` file in the repository root to configure the application. When a user clicks the button, Heroku reads this file to determine:
+The "Deploy to Heroku" button is a simple way to deploy an application to Heroku directly from a GitHub repository. It uses the `app.json` file to configure the application.
 
-1. Application name and description
-2. Required buildpacks
-3. Environment variables
-4. Post-deployment scripts
+## Button Markdown
 
-## Customizing the Deployment
+The button is added to the README.md file using the following markdown:
 
-To customize the deployment, edit the `app.json` file. The current configuration includes:
-
-- Python buildpack
-- Google Chrome buildpack for Playwright
-- ChromeDriver buildpack
-- Environment variables for note.com credentials and OpenAI API key
-- Post-deployment script to install Playwright browsers
-
-## Button HTML
-
-The button in the README.md is created with the following HTML:
-
-```html
+```markdown
 [![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+```
+
+## app.json Configuration
+
+The `app.json` file in the repository root configures the one-click deployment:
+
+```json
+{
+  "name": "note.com Integration System",
+  "description": "An autonomous agent system for posting SEO-optimized articles to note.com",
+  "repository": "https://github.com/ShunsukeHayashi/XinobiAgent_Devin",
+  "keywords": ["python", "gradio", "note.com", "seo", "content-generation"],
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    },
+    {
+      "url": "https://github.com/heroku/heroku-buildpack-google-chrome"
+    },
+    {
+      "url": "https://github.com/heroku/heroku-buildpack-chromedriver"
+    }
+  ],
+  "env": {
+    "NOTE_USERNAME": {
+      "description": "Your note.com username",
+      "required": false
+    },
+    "NOTE_PASSWORD": {
+      "description": "Your note.com password",
+      "required": false
+    },
+    "OPENAI_API_KEY": {
+      "description": "Your OpenAI API key",
+      "required": false
+    },
+    "USE_MOCK": {
+      "description": "Whether to use mock data (True/False)",
+      "value": "True",
+      "required": false
+    }
+  },
+  "scripts": {
+    "postdeploy": "python -m playwright install"
+  }
+}
+```
+
+## Key Components
+
+1. **name**: The name of the application.
+2. **description**: A brief description of the application.
+3. **repository**: The GitHub repository URL.
+4. **keywords**: Tags for the application.
+5. **buildpacks**: The buildpacks required for the application.
+6. **env**: Environment variables for the application.
+7. **scripts**: Scripts to run after deployment.
+
+## Customization
+
+To customize the deployment button:
+
+1. Update the `app.json` file with your specific configuration.
+2. Update the button URL in the README.md file to include your repository name:
+
+```markdown
+[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/ShunsukeHayashi/XinobiAgent_Devin)
 ```
 
 ## Testing the Button
 
 To test the button:
 
-1. Push your changes to GitHub
-2. Click the button in the README.md
-3. Follow the Heroku deployment process
-4. Verify that the application deploys correctly
-
-## Troubleshooting
-
-If the deployment fails:
-
-1. Check the Heroku build logs
-2. Verify that all required buildpacks are specified in `app.json`
-3. Ensure that all required environment variables are defined
-4. Check that the post-deployment script is correct
+1. Commit and push the `app.json` file to your repository.
+2. Click the button in the README.md file.
+3. Verify that the deployment process works as expected.
