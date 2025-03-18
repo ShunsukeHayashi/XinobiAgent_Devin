@@ -31,6 +31,9 @@ class NoteWebUI:
         self.seo_analyzer = None
         self.content_generator = None
         self.note_poster = None
+        self.last_seo_analysis = None
+        self.last_article = None
+        self.last_article_url = None
         
         # Check environment variable for mock mode if not explicitly set
         if use_mock is None:
@@ -171,6 +174,9 @@ class NoteWebUI:
                 - 平均画像数: {seo_analysis["structure"]["avg_images"]}
                 """
                 
+                # Store the analysis for later use
+                self.last_seo_analysis = seo_analysis
+                
                 return result
             else:
                 return "❌ SEO分析に失敗しました。"
@@ -201,6 +207,79 @@ class NoteWebUI:
         except Exception as e:
             logger.error(f"Article preview failed: {str(e)}")
             return f"❌ エラー: {str(e)}"
+    async def generate_article(self, theme, genre, additional_input=""):
+        """Generate an article based on theme, genre and SEO analysis."""
+        try:
+            if not self.initialized:
+                init_message = await self.initialize()
+                if "❌" in init_message:
+                    return init_message
+            
+            if not theme or not genre:
+                return "❌ テーマとジャンルを入力してください。"
+            
+            logger.info(f"Generating article for theme: {theme}, genre: {genre}")
+            
+            if self.use_mock:
+                # Use mock data for demonstration
+                logger.info("Using mock data for article generation")
+                await asyncio.sleep(3)  # Simulate processing time
+                self.last_article = MOCK_ARTICLE
+                return f"✅ 記事生成成功: {self.last_article['title']}"
+            
+            # If we don't have SEO analysis yet, perform it
+            if not self.last_seo_analysis:
+                category = f"{theme} {genre}"
+                seo_result = await self.analyze_seo(category)
+                if "❌" in seo_result:
+                    return seo_result
+            
+            # Generate article using the content generator
+            prompt = f"テーマ: {theme}\nジャンル: {genre}"
+            if additional_input:
+                prompt += f"\n追加情報: {additional_input}"
+            
+            article = self.content_generator.generate_article(prompt, self.last_seo_analysis)
+            if not article:
+                return "❌ 記事生成に失敗しました。"
+            
+            self.last_article = article
+            return f"✅ 記事生成成功: {article['title']}"
+        except Exception as e:
+            logger.error(f"Article generation failed: {str(e)}")
+            return f"❌ エラー: {str(e)}"
+    
+    async def post_article(self):
+        """Post the last generated article to note.com."""
+        try:
+            if not self.initialized:
+                init_message = await self.initialize()
+                if "❌" in init_message:
+                    return init_message
+            
+            if not self.last_article:
+                return "❌ 記事が生成されていません。先に記事を生成してください。"
+            
+            logger.info(f"Posting article: {self.last_article['title']}")
+            
+            if self.use_mock:
+                # Use mock data for demonstration
+                logger.info("Using mock data for article posting")
+                await asyncio.sleep(2)  # Simulate processing time
+                self.last_article_url = MOCK_ARTICLE_URL
+                return {"status": "success", "message": f"✅ 記事投稿成功 (デモモード)", "url": self.last_article_url}
+            
+            # Post article using the note poster
+            article_url = await self.note_poster.post_article(self.last_article)
+            if not article_url:
+                return {"status": "error", "message": "❌ 記事投稿に失敗しました。"}
+            
+            self.last_article_url = article_url
+            return {"status": "success", "message": f"✅ 記事投稿成功", "url": article_url}
+        except Exception as e:
+            logger.error(f"Article posting failed: {str(e)}")
+            return {"status": "error", "message": f"❌ エラー: {str(e)}"}
+
     
     def check_env_vars(self):
         """Check if environment variables are set."""
