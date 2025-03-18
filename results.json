@@ -1,0 +1,11 @@
+{
+  "initialization": "✅ 初期化成功: デモモードで初期化しました。実際のnote.comへの接続は行いません。",
+  "seo_analysis": "\n                ## SEO分析結果: Python プログラミング\n                \n                ### トップキーワード\n                Python, プログラミング, 初心者, 開発, AI, 機械学習, データ分析, ウェブ開発, アプリ開発, 自動化\n                \n                ### 最も閲覧された記事\n                Pythonで始める機械学習入門\n                \n                ### 最も「いいね」された記事\n                初心者でもわかるPython自動化スクリプト\n                \n                ### 記事構造の分析\n                - 平均段落数: 12\n                - 平均リスト数: 3\n                - 平均リンク数: 5\n                - 平均画像数: 2\n                ",
+  "article_generation": "✅ 記事生成成功: Pythonプログラミングの基礎から応用まで",
+  "article_posting": {
+    "status": "success",
+    "message": "✅ 記事投稿成功 (デモモード)",
+    "url": "https://note.com/shunsuke_ai/n/n765a359e920b"
+  },
+  "article_url": "https://note.com/shunsuke_ai/n/n765a359e920b"
+}
