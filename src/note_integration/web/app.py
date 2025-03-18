@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class NoteWebUI:
     """Web UI for note.com integration using Gradio."""
     
-    def __init__(self, use_mock=True):
+    def __init__(self, use_mock=None):
         self.integration = NoteIntegration()
         self.initialized = False
         self.auth_token = None
@@ -31,7 +31,13 @@ class NoteWebUI:
         self.seo_analyzer = None
         self.content_generator = None
         self.note_poster = None
-        self.use_mock = use_mock
+        
+        # Check environment variable for mock mode if not explicitly set
+        if use_mock is None:
+            use_mock_env = os.environ.get("USE_MOCK", "True").lower()
+            self.use_mock = use_mock_env in ["true", "1", "t", "yes"]
+        else:
+            self.use_mock = use_mock
     
     async def initialize(self):
         """Initialize the note.com integration."""
