@@ -43,13 +43,22 @@ class NotePoster:
                 await page.goto(f"{NOTE_BASE_URL}/new")
                 await page.wait_for_load_state("networkidle")
                 
+                # Wait for editor to be fully loaded
+                await page.wait_for_selector('textarea[placeholder="記事タイトル"]')
+                await page.wait_for_selector('[contenteditable="true"]')
+                
                 # Fill title
                 logger.info("Filling title")
-                await page.fill('input[placeholder="タイトル"]', article["title"])
+                await page.fill('textarea[placeholder="記事タイトル"]', article["title"])
                 
                 # Fill content
                 logger.info("Filling content")
-                await page.evaluate(f'document.querySelector(".note-editor").innerHTML = `{article["content"]}`')
+                await page.evaluate(f'document.querySelector("[contenteditable=\\"true\\"]").innerHTML = `{article["content"]}`')
+                
+                # Verify content was inserted
+                content_inserted = await page.evaluate('document.querySelector("[contenteditable=\\"true\\"]").innerHTML')
+                if not content_inserted:
+                    logger.warning("Content may not have been inserted properly")
                 
                 # Add tags
                 logger.info("Adding tags")
@@ -65,7 +74,7 @@ class NotePoster:
                 
                 # Click publish button
                 logger.info("Publishing article")
-                await page.click('button[data-testid="publish-button"]')
+                await page.click('button span:has-text("公開に進む")')
                 
                 # Wait for publish to complete
                 await page.wait_for_load_state("networkidle")
